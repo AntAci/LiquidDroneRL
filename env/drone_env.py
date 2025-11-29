@@ -19,7 +19,21 @@ WIND_TARGET_INTERVAL = 50  # Steps between sampling new wind target
 MAX_STEPS = 500  # Maximum episode length
 POSITION_MIN = 0.0  # Minimum position (x, y)
 POSITION_MAX = 1.0  # Maximum position (x, y)
-THRUST = 0.2  # Thrust magnitude per action
+THRUST = 0.25  # Thrust magnitude per action (slightly higher for control authority)
+
+# Target zone (box) constants
+TARGET_X_MIN = 0.7  # Target box left edge
+TARGET_X_MAX = 0.9  # Target box right edge
+TARGET_Y_MIN = 0.3  # Target box bottom edge
+TARGET_Y_MAX = 0.7  # Target box top edge
+TARGET_REWARD = 2.0  # Bonus reward for being in target zone
+TARGET_SPAWN_DELAY = 50  # Steps before target zone appears (after wind starts)
+
+# Stabilization and shaping
+DRAG_COEFF = 0.3  # Linear velocity drag coefficient
+SPEED_PENALTY_COEFF = 0.05  # Penalize high speeds to encourage smooth control
+EDGE_MARGIN = 0.06  # Margin near boundaries where penalty increases
+EDGE_PENALTY_COEFF = 0.5  # Strength of boundary proximity penalty
 
 
 class DroneWindEnv(gym.Env):
@@ -73,8 +87,8 @@ class DroneWindEnv(gym.Env):
             observation: Initial observation array
             info: Empty info dict
         """
-        if seed is not None:
-            super().reset(seed=seed)
+        # Always call super().reset to ensure seeding and np_random are initialized
+        super().reset(seed=seed)
         
         # Initialize state
         self.x = 0.1
@@ -117,9 +131,32 @@ class DroneWindEnv(gym.Env):
         self._apply_physics(action)
         
         # Compute reward
-        base_reward = 1.0
-        position_bonus = 0.1 * self.x  # Small bonus for moving right
-        reward = base_reward + position_bonus
+        base_reward = 1.0  # Survival reward
+        
+        # Check if drone is in target zone (only if target has spawned)
+        target_spawned = self.step_count >= TARGET_SPAWN_DELAY
+        in_target = False
+        if target_spawned:
+            in_target = (
+                TARGET_X_MIN <= self.x <= TARGET_X_MAX and
+                TARGET_Y_MIN <= self.y <= TARGET_Y_MAX
+            )
+        target_bonus = TARGET_REWARD if in_target else 0.0
+        
+        # Speed penalty (discourage excessive velocity)
+        speed_sq = self.vx * self.vx + self.vy * self.vy
+        speed_penalty = -SPEED_PENALTY_COEFF * float(speed_sq)
+        # Boundary proximity penalty (discourage hovering near walls)
+        dist_left = self.x - POSITION_MIN
+        dist_right = POSITION_MAX - self.x
+        dist_bottom = self.y - POSITION_MIN
+        dist_top = POSITION_MAX - self.y
+        min_dist = min(dist_left, dist_right, dist_bottom, dist_top)
+        edge_penalty = 0.0
+        if min_dist < EDGE_MARGIN:
+            edge_penalty = -EDGE_PENALTY_COEFF * (EDGE_MARGIN - float(min_dist)) / EDGE_MARGIN
+        
+        reward = base_reward + target_bonus + speed_penalty + edge_penalty
         
         # Check termination (boundary crash)
         terminated = (
@@ -134,7 +171,16 @@ class DroneWindEnv(gym.Env):
         
         # Build observation
         obs = self._get_observation()
-        info = {"step_count": self.step_count}
+        
+        # Check if in target zone (only if target has spawned)
+        target_spawned = self.step_count >= TARGET_SPAWN_DELAY
+        in_target = False
+        if target_spawned:
+            in_target = (
+                TARGET_X_MIN <= self.x <= TARGET_X_MAX and
+                TARGET_Y_MIN <= self.y <= TARGET_Y_MAX
+            )
+        info = {"step_count": self.step_count, "in_target": in_target, "target_spawned": target_spawned}
         
         return obs, reward, terminated, truncated, info
     
@@ -172,6 +218,9 @@ class DroneWindEnv(gym.Env):
         # Update velocity with thrust and wind
         self.vx = self.vx + ax + self.wind_x * DT
         self.vy = self.vy + ay + self.wind_y * DT
+        # Apply linear drag (proportional to velocity) for stability
+        self.vx -= DRAG_COEFF * self.vx * DT
+        self.vy -= DRAG_COEFF * self.vy * DT
         
         # Clamp velocity
         self.vx = np.clip(self.vx, -MAX_VEL, MAX_VEL)
