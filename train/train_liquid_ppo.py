@@ -13,8 +13,9 @@ import argparse
 from typing import Optional
 import gymnasium as gym
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.callbacks import BaseCallback
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -125,6 +126,8 @@ def main():
     # Create vectorized environment
     print("Creating vectorized environment...")
     vec_env = make_vec_env(num_envs=args.num_envs)
+    # Normalize observations and rewards for PPO stability
+    vec_env = VecNormalize(vec_env, norm_obs=True, norm_reward=True, clip_obs=10.0, clip_reward=10.0)
     
     # Get observation space for feature extractor
     obs_space = vec_env.observation_space
@@ -184,18 +187,66 @@ def main():
     
     # For now, train on fixed mild wind
     print("\nStarting training...")
-    model.learn(
-        total_timesteps=args.timesteps,
-        progress_bar=True
-    )
     
-    # Save the model
+    class MetricsCallback(BaseCallback):
+        """Custom callback to log environment-level metrics from infos."""
+        def __init__(self, log_interval_steps: int = 1000):
+            super().__init__()
+            self.log_interval_steps = log_interval_steps
+            self._reset_sums()
+        
+        def _reset_sums(self):
+            self.sum_effort = 0.0
+            self.sum_thrust = 0.0
+            self.sum_in_target = 0
+            self.sum_spawned = 0
+            self.sum_dist = 0.0
+            self.count_dist = 0
+            self.count_steps = 0
+        
+        def _on_step(self) -> bool:
+            infos = self.locals.get("infos", [])
+            for info in infos:
+                if not isinstance(info, dict):
+                    continue
+                self.count_steps += 1
+                self.sum_effort += float(info.get("effort", 0.0) or 0.0)
+                self.sum_thrust += float(info.get("thrust_applied", 0.0) or 0.0)
+                if info.get("target_spawned", False):
+                    self.sum_spawned += 1
+                    if info.get("in_target", False):
+                        self.sum_in_target += 1
+                    dist = info.get("distance_to_target", None)
+                    if dist is not None:
+                        self.sum_dist += float(dist)
+                        self.count_dist += 1
+            # Periodic logging
+            if self.num_timesteps % self.log_interval_steps == 0 and self.count_steps > 0:
+                avg_effort = self.sum_effort / self.count_steps
+                avg_thrust = self.sum_thrust / self.count_steps
+                pct_in_target = (self.sum_in_target / self.sum_spawned) if self.sum_spawned > 0 else 0.0
+                avg_dist = (self.sum_dist / self.count_dist) if self.count_dist > 0 else 0.0
+                self.logger.record("custom/avg_effort", avg_effort)
+                self.logger.record("custom/avg_thrust_applied", avg_thrust)
+                self.logger.record("custom/percent_in_target", pct_in_target)
+                self.logger.record("custom/avg_distance_to_target", avg_dist)
+                # Reset accumulators
+                self._reset_sums()
+            return True
+    
+    model.learn(total_timesteps=args.timesteps, progress_bar=True, callback=MetricsCallback(log_interval_steps=2000))
+    
+    # Save the model and VecNormalize stats
     print(f"\nSaving model to {args.model_path}...")
     model.save(args.model_path)
+    vecnorm_path = args.model_path.replace(".zip", "_vecnorm.pkl")
+    print(f"Saving VecNormalize stats to {vecnorm_path}...")
+    vec_env.save(vecnorm_path)
     
     print("\n" + "=" * 60)
     print("Training completed successfully!")
     print(f"Model saved to: {args.model_path}")
+    print(f"VecNormalize stats saved to: {vecnorm_path}")
     print(f"TensorBoard logs available at: {args.logdir}")
     print("=" * 60)
     print("\nTo view training progress, run:")

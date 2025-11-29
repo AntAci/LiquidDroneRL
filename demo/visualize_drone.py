@@ -16,6 +16,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from env.drone_env import DroneWindEnv
 from stable_baselines3 import PPO
+from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
+from env.drone_env import POSITION_MIN, POSITION_MAX
 
 
 # Pygame constants
@@ -40,16 +42,18 @@ ORANGE = (255, 165, 0)
 class DroneVisualizer:
     """Pygame-based visualizer for the drone environment."""
     
-    def __init__(self, env: DroneWindEnv, model: Optional[PPO] = None):
+    def __init__(self, env: DroneWindEnv, model: Optional[PPO] = None, vec_env: Optional[VecNormalize] = None):
         """
         Initialize the visualizer.
         
         Args:
-            env: DroneWindEnv instance
+            env: DroneWindEnv instance (underlying unwrapped env)
             model: Optional trained PPO model (if None, uses random actions)
+            vec_env: Optional VecNormalize wrapper (for normalized observations)
         """
         self.env = env
         self.model = model
+        self.vec_env = vec_env
         
         # Initialize Pygame
         pygame.init()
@@ -59,17 +63,18 @@ class DroneVisualizer:
         self.font = pygame.font.Font(None, 24)
         self.small_font = pygame.font.Font(None, 18)
         
-        # World to screen scaling
-        # Environment is [0, 1] x [0, 1], we'll use most of the screen
+        # World to screen scaling (generalized world range)
         self.world_margin = 50
         self.world_width = WINDOW_WIDTH - 2 * self.world_margin
         self.world_height = WINDOW_HEIGHT - 2 * self.world_margin
         
     def world_to_screen(self, x: float, y: float) -> tuple[int, int]:
-        """Convert world coordinates [0,1] to screen coordinates."""
-        screen_x = int(self.world_margin + x * self.world_width)
-        # Flip y-axis (world y=0 is bottom, screen y=0 is top)
-        screen_y = int(WINDOW_HEIGHT - self.world_margin - y * self.world_height)
+        """Convert world coordinates [POSITION_MIN, POSITION_MAX] to screen coordinates."""
+        xr = (x - POSITION_MIN) / (POSITION_MAX - POSITION_MIN)
+        yr = (y - POSITION_MIN) / (POSITION_MAX - POSITION_MIN)
+        screen_x = int(self.world_margin + xr * self.world_width)
+        # Flip y-axis (world y min at bottom)
+        screen_y = int(WINDOW_HEIGHT - self.world_margin - yr * self.world_height)
         return screen_x, screen_y
     
     def draw_drone(self, x: float, y: float, vx: float, vy: float):
@@ -77,7 +82,7 @@ class DroneVisualizer:
         screen_x, screen_y = self.world_to_screen(x, y)
         
         # Draw drone body (circle)
-        drone_radius = 15
+        drone_radius = 7  # Half the original size
         pygame.draw.circle(self.screen, CYAN, (screen_x, screen_y), drone_radius)
         pygame.draw.circle(self.screen, BLUE, (screen_x, screen_y), drone_radius, 2)
         
@@ -144,13 +149,13 @@ class DroneVisualizer:
     def draw_boundaries(self):
         """Draw the world boundaries."""
         # Top boundary
-        top_left = self.world_to_screen(0, 1)
-        top_right = self.world_to_screen(1, 1)
+        top_left = self.world_to_screen(POSITION_MIN, POSITION_MAX)
+        top_right = self.world_to_screen(POSITION_MAX, POSITION_MAX)
         pygame.draw.line(self.screen, RED, top_left, top_right, 3)
         
         # Bottom boundary
-        bot_left = self.world_to_screen(0, 0)
-        bot_right = self.world_to_screen(1, 0)
+        bot_left = self.world_to_screen(POSITION_MIN, POSITION_MIN)
+        bot_right = self.world_to_screen(POSITION_MAX, POSITION_MIN)
         pygame.draw.line(self.screen, RED, bot_left, bot_right, 3)
         
         # Left boundary
@@ -161,17 +166,20 @@ class DroneVisualizer:
     
     def draw_target_zone(self, target_spawned: bool = True):
         """Draw the target zone (box) that the drone needs to reach."""
-        from env.drone_env import TARGET_X_MIN, TARGET_X_MAX, TARGET_Y_MIN, TARGET_Y_MAX, TARGET_SPAWN_DELAY
-        
         # Only draw if target has spawned
         if not target_spawned:
             return
         
+        # Use env's randomized target bounds, with fallbacks
+        tx_min = getattr(self.env, 'target_x_min', POSITION_MIN + 0.7 * (POSITION_MAX - POSITION_MIN))
+        tx_max = getattr(self.env, 'target_x_max', POSITION_MIN + 0.9 * (POSITION_MAX - POSITION_MIN))
+        ty_min = getattr(self.env, 'target_y_min', POSITION_MIN + 0.3 * (POSITION_MAX - POSITION_MIN))
+        ty_max = getattr(self.env, 'target_y_max', POSITION_MIN + 0.7 * (POSITION_MAX - POSITION_MIN))
         # Get screen coordinates for target zone corners
-        top_left = self.world_to_screen(TARGET_X_MIN, TARGET_Y_MAX)
-        top_right = self.world_to_screen(TARGET_X_MAX, TARGET_Y_MAX)
-        bot_left = self.world_to_screen(TARGET_X_MIN, TARGET_Y_MIN)
-        bot_right = self.world_to_screen(TARGET_X_MAX, TARGET_Y_MIN)
+        top_left = self.world_to_screen(tx_min, ty_max)
+        top_right = self.world_to_screen(tx_max, ty_max)
+        bot_left = self.world_to_screen(tx_min, ty_min)
+        bot_right = self.world_to_screen(tx_max, ty_min)
         
         # Draw target zone as a semi-transparent box
         # Create a surface for transparency
@@ -221,25 +229,51 @@ class DroneVisualizer:
         self.screen.blit(text, (10, y_offset))
         y_offset += 30
         
+        # Get underlying env for info display
+        info_env = self.vec_env.envs[0] if self.vec_env is not None else self.env
+        if hasattr(info_env, 'env'):
+            info_env = info_env.env  # Unwrap Monitor if present
+        
         # Position
-        text = self.small_font.render(f"Position: ({self.env.x:.2f}, {self.env.y:.2f})", True, WHITE)
+        text = self.small_font.render(f"Position: ({info_env.x:.2f}, {info_env.y:.2f})", True, WHITE)
         self.screen.blit(text, (10, y_offset))
         y_offset += 25
         
         # Velocity
-        text = self.small_font.render(f"Velocity: ({self.env.vx:.2f}, {self.env.vy:.2f})", True, WHITE)
+        text = self.small_font.render(f"Velocity: ({info_env.vx:.2f}, {info_env.vy:.2f})", True, WHITE)
         self.screen.blit(text, (10, y_offset))
         y_offset += 25
         
         # Wind
-        text = self.small_font.render(f"Wind: ({self.env.wind_x:.2f}, {self.env.wind_y:.2f})", True, GREEN)
+        text = self.small_font.render(f"Wind: ({info_env.wind_x:.2f}, {info_env.wind_y:.2f})", True, GREEN)
         self.screen.blit(text, (10, y_offset))
         y_offset += 25
         
-        # Action
+        # Action (handle both discrete and continuous)
         if action is not None:
-            action_names = ["No thrust", "Up", "Down", "Left", "Right"]
-            text = self.small_font.render(f"Action: {action_names[action]}", True, YELLOW)
+            if isinstance(action, (np.ndarray, list)) or hasattr(action, '__len__'):
+                # Continuous action: show thrust vector
+                if hasattr(info_env, 'ax_applied') and hasattr(info_env, 'ay_applied'):
+                    # Show applied thrust (after smoothing)
+                    ax = info_env.ax_applied
+                    ay = info_env.ay_applied
+                    thrust_mag = np.sqrt(ax**2 + ay**2)
+                    text = self.small_font.render(
+                        f"Thrust: ({ax:.3f}, {ay:.3f}) |{thrust_mag:.3f}|", 
+                        True, YELLOW
+                    )
+                else:
+                    # Fallback: show raw action
+                    ax, ay = action[0], action[1]
+                    text = self.small_font.render(
+                        f"Action: ({ax:.3f}, {ay:.3f})", 
+                        True, YELLOW
+                    )
+            else:
+                # Discrete action (legacy support)
+                action_names = ["No thrust", "Up", "Down", "Left", "Right"]
+                action_idx = int(action) if hasattr(action, '__int__') else action
+                text = self.small_font.render(f"Action: {action_names[action_idx]}", True, YELLOW)
             self.screen.blit(text, (10, y_offset))
             y_offset += 25
         
@@ -258,7 +292,13 @@ class DroneVisualizer:
             max_steps: Maximum number of steps to run
             speed: Speed multiplier (1.0 = normal, higher = faster)
         """
-        obs, info = self.env.reset()
+        # Reset environment (use vec_env if available)
+        if self.vec_env is not None:
+            vec_obs = self.vec_env.reset()
+            obs = vec_obs[0]
+            info = {}  # VecEnv reset doesn't return info
+        else:
+            obs, info = self.env.reset()
         done = False
         truncated = False
         step_count = 0
@@ -277,7 +317,12 @@ class DroneVisualizer:
                         paused = not paused
                     elif event.key == pygame.K_r:
                         # Reset
-                        obs, info = self.env.reset()
+                        if self.vec_env is not None:
+                            vec_obs = self.vec_env.reset()
+                            obs = vec_obs[0]
+                            info = {}
+                        else:
+                            obs, info = self.env.reset()
                         done = False
                         truncated = False
                         step_count = 0
@@ -285,17 +330,42 @@ class DroneVisualizer:
                         running = False
             
             if not paused and not done and not truncated:
-                # Get action
+                # Get action (use vec_env if available for normalization)
                 if self.model is not None:
-                    action, _ = self.model.predict(obs, deterministic=True)
+                    if self.vec_env is not None:
+                        # Use vectorized env for normalized observations
+                        action, _ = self.model.predict(obs, deterministic=True)
+                    else:
+                        action, _ = self.model.predict(obs, deterministic=True)
                 else:
                     action = self.env.action_space.sample()
                 
                 # Step environment
-                obs, reward, done, truncated, info = self.env.step(action)
+                if self.vec_env is not None:
+                    # Use vectorized env for stepping (handles normalization)
+                    vec_obs, vec_reward, vec_done, vec_info = self.vec_env.step([action])
+                    obs = vec_obs[0]
+                    reward = vec_reward[0]
+                    done = vec_done[0]
+                    info = vec_info[0] if vec_info else {}
+                    truncated = False  # VecEnv doesn't return truncated separately
+                else:
+                    obs, reward, done, truncated, info = self.env.step(action)
                 step_count += 1
-                in_target = info.get("in_target", False)
-                target_spawned = info.get("target_spawned", False)
+                # Get info from underlying env if using VecEnv
+                if self.vec_env is not None:
+                    # Access underlying env's attributes directly
+                    underlying_env = self.vec_env.envs[0]
+                    if hasattr(underlying_env, 'env'):
+                        underlying_env = underlying_env.env  # Unwrap Monitor if present
+                    in_target = getattr(underlying_env, 'target_x_min', None) is not None and (
+                        underlying_env.target_x_min <= underlying_env.x <= underlying_env.target_x_max and
+                        underlying_env.target_y_min <= underlying_env.y <= underlying_env.target_y_max
+                    ) if underlying_env.step_count >= 50 else False
+                    target_spawned = underlying_env.step_count >= 50
+                else:
+                    in_target = info.get("in_target", False)
+                    target_spawned = info.get("target_spawned", False)
             
             # Draw everything
             self.screen.fill(BLACK)
@@ -303,24 +373,32 @@ class DroneVisualizer:
             # Draw boundaries
             self.draw_boundaries()
             
+            # Get underlying env for drawing
+            draw_env = self.vec_env.envs[0] if self.vec_env is not None else self.env
+            if hasattr(draw_env, 'env'):
+                draw_env = draw_env.env  # Unwrap Monitor if present
+            
             # Draw target zone (only if spawned)
-            target_spawned_current = info.get("target_spawned", self.env.step_count >= 50) if not paused else False
+            target_spawned_current = target_spawned if not paused else False
             self.draw_target_zone(target_spawned=target_spawned_current)
             
             # Draw wind arrows
-            self.draw_wind(self.env.wind_x, self.env.wind_y)
+            self.draw_wind(draw_env.wind_x, draw_env.wind_y)
             
             # Draw drone
-            self.draw_drone(self.env.x, self.env.y, self.env.vx, self.env.vy)
+            self.draw_drone(draw_env.x, draw_env.y, draw_env.vx, draw_env.vy)
             
             # Get in_target from info if available, otherwise compute
             if not paused and 'in_target' in locals():
                 current_in_target = in_target
             else:
-                from env.drone_env import TARGET_X_MIN, TARGET_X_MAX, TARGET_Y_MIN, TARGET_Y_MAX
+                tx_min = getattr(self.env, 'target_x_min', POSITION_MIN + 0.7 * (POSITION_MAX - POSITION_MIN))
+                tx_max = getattr(self.env, 'target_x_max', POSITION_MIN + 0.9 * (POSITION_MAX - POSITION_MIN))
+                ty_min = getattr(self.env, 'target_y_min', POSITION_MIN + 0.3 * (POSITION_MAX - POSITION_MIN))
+                ty_max = getattr(self.env, 'target_y_max', POSITION_MIN + 0.7 * (POSITION_MAX - POSITION_MIN))
                 current_in_target = (
-                    TARGET_X_MIN <= self.env.x <= TARGET_X_MAX and
-                    TARGET_Y_MIN <= self.env.y <= TARGET_Y_MAX
+                    tx_min <= self.env.x <= tx_max and
+                    ty_min <= self.env.y <= ty_max
                 )
             
             # Draw info
@@ -354,7 +432,12 @@ class DroneVisualizer:
             # Auto-reset on done/truncated
             if (done or truncated) and not paused:
                 pygame.time.wait(1000)  # Wait 1 second before reset
-                obs, info = self.env.reset()
+                if self.vec_env is not None:
+                    vec_obs = self.vec_env.reset()
+                    obs = vec_obs[0]
+                    info = {}  # VecEnv reset doesn't return info
+                else:
+                    obs, info = self.env.reset()
                 done = False
                 truncated = False
                 step_count = 0
@@ -393,21 +476,37 @@ def main():
     
     args = parser.parse_args()
     
-    # Create environment
-    env = DroneWindEnv()
+    # Create environment (vectorized for VecNormalize compatibility)
+    def _make_env():
+        return DroneWindEnv()
+    venv = DummyVecEnv([_make_env])
+    
+    # Load VecNormalize stats if available
+    vecnorm_path = args.model_path.replace(".zip", "_vecnorm.pkl")
+    if os.path.exists(vecnorm_path):
+        print(f"Loading VecNormalize stats from {vecnorm_path}...")
+        vec_env = VecNormalize.load(vecnorm_path, venv)
+        vec_env.training = False
+        vec_env.norm_reward = False
+    else:
+        print("VecNormalize stats not found; using unnormalized env.")
+        vec_env = venv
     
     # Load model if specified
     model = None
     if not args.random:
         if os.path.exists(args.model_path):
             print(f"Loading model from {args.model_path}...")
-            model = PPO.load(args.model_path, env=env)
+            model = PPO.load(args.model_path, env=vec_env)
             print("Model loaded successfully!")
         else:
             print(f"Model not found at {args.model_path}, using random actions")
     
+    # Get the underlying environment for visualization
+    env = venv.envs[0]
+    
     # Create visualizer
-    visualizer = DroneVisualizer(env, model)
+    visualizer = DroneVisualizer(env, model, vec_env)
     
     # Run visualization
     print("\nStarting visualization...")

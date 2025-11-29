@@ -13,35 +13,45 @@ from typing import Optional, Tuple, Dict, Any
 # Constants
 DT = 0.1  # Time step
 MAX_VEL = 2.0  # Maximum velocity magnitude
-WIND_MAX = 2.0  # Maximum wind magnitude
-WIND_SMOOTHING = 0.05  # Wind interpolation rate toward target
+WIND_MAX = 1.5  # Maximum wind magnitude (reduced for smoother control)
+WIND_SMOOTHING = 0.02  # Wind interpolation rate toward target (slower, smoother)
 WIND_TARGET_INTERVAL = 50  # Steps between sampling new wind target
 MAX_STEPS = 500  # Maximum episode length
 POSITION_MIN = 0.0  # Minimum position (x, y)
 POSITION_MAX = 1.0  # Maximum position (x, y)
-THRUST = 0.25  # Thrust magnitude per action (slightly higher for control authority)
+THRUST = 0.26  # Thrust magnitude per action (increased to handle gravity + wind)
+GRAVITY = -1.8  # Constant vertical acceleration (downwards), world units / s^2
 
 # Target zone (box) constants
-TARGET_X_MIN = 0.7  # Target box left edge
-TARGET_X_MAX = 0.9  # Target box right edge
-TARGET_Y_MIN = 0.3  # Target box bottom edge
-TARGET_Y_MAX = 0.7  # Target box top edge
-TARGET_REWARD = 2.0  # Bonus reward for being in target zone
+TARGET_REWARD = 4.0  # Bonus reward for being in target zone (increased to incentivize staying)
 TARGET_SPAWN_DELAY = 50  # Steps before target zone appears (after wind starts)
+BOUNDARY_CRASH_PENALTY = -20.0  # Large penalty for hitting boundary
 
 # Stabilization and shaping
-DRAG_COEFF = 0.3  # Linear velocity drag coefficient
+DRAG_COEFF = 0.45  # Linear velocity drag coefficient (increased damping)
 SPEED_PENALTY_COEFF = 0.05  # Penalize high speeds to encourage smooth control
-EDGE_MARGIN = 0.06  # Margin near boundaries where penalty increases
+EDGE_MARGIN_FRAC = 0.06  # Fraction of world size near boundaries where penalty increases
+EDGE_MARGIN = EDGE_MARGIN_FRAC * (POSITION_MAX - POSITION_MIN)
 EDGE_PENALTY_COEFF = 0.5  # Strength of boundary proximity penalty
+EFFORT_COEFF = 0.08  # Penalize thrust effort outside target (tuned for gravity)
+EFFORT_IN_TARGET_MULT = 0.3  # Much weaker effort penalty inside target (allows thrust to counteract wind and stay)
+BASE_STEP_COST = -0.01  # Small time penalty to discourage aimless survival
+POTENTIAL_COEFF = 0.5  # Strength of potential-based shaping on distance reduction
+
+# Target box relative size (fractions of world size)
+TARGET_BOX_WIDTH_FRAC = 0.2
+TARGET_BOX_HEIGHT_FRAC = 0.4
+
+# Thrust slew limiting for smoother actuation (units of thrust per second)
+SLEW_RATE = 3.0
 
 
 class DroneWindEnv(gym.Env):
     """
     A 2D drone environment with dynamic wind.
     
-    Observation: [x, y, vx, vy, wind_x, wind_y]
-    Action: Discrete(5) - 0: no thrust, 1: up, 2: down, 3: left, 4: right
+    Observation: [x, y, vx, vy, wind_x, wind_y, dx_to_target, dy_to_target]
+    Action: Box([-1, 1]^2) - continuous x/y thrust commands (normalized), scaled by THRUST
     """
     
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
@@ -49,15 +59,15 @@ class DroneWindEnv(gym.Env):
     def __init__(self):
         super().__init__()
         
-        # Observation space: [x, y, vx, vy, wind_x, wind_y]
+        # Observation space: [x, y, vx, vy, wind_x, wind_y, dx_to_target, dy_to_target]
         self.observation_space = spaces.Box(
-            low=np.array([POSITION_MIN, POSITION_MIN, -MAX_VEL, -MAX_VEL, -WIND_MAX, -WIND_MAX], dtype=np.float32),
-            high=np.array([POSITION_MAX, POSITION_MAX, MAX_VEL, MAX_VEL, WIND_MAX, WIND_MAX], dtype=np.float32),
+            low=np.array([POSITION_MIN, POSITION_MIN, -MAX_VEL, -MAX_VEL, -WIND_MAX, -WIND_MAX, -1.0, -1.0], dtype=np.float32),
+            high=np.array([POSITION_MAX, POSITION_MAX, MAX_VEL, MAX_VEL, WIND_MAX, WIND_MAX, 1.0, 1.0], dtype=np.float32),
             dtype=np.float32
         )
         
-        # Action space: 5 discrete thrust directions
-        self.action_space = spaces.Discrete(5)
+        # Action space: 2D continuous thrust command in [-1, 1] for x and y
+        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2,), dtype=np.float32)
         
         # Internal state
         self.x: float = 0.0
@@ -69,6 +79,11 @@ class DroneWindEnv(gym.Env):
         self.wind_target_x: float = 0.0
         self.wind_target_y: float = 0.0
         self.step_count: int = 0
+        # Applied thrust (smoothed)
+        self.ax_applied: float = 0.0
+        self.ay_applied: float = 0.0
+        # Track previous distance to target center for potential shaping
+        self.prev_distance_to_target: Optional[float] = None
         
     def reset(
         self, 
@@ -100,19 +115,45 @@ class DroneWindEnv(gym.Env):
         self.wind_target_x = 0.0
         self.wind_target_y = 0.0
         self.step_count = 0
+        self.ax_applied = 0.0
+        self.ay_applied = 0.0
+        # Randomize target box position (fixed size, random location)
+        world_size = POSITION_MAX - POSITION_MIN
+        box_w = TARGET_BOX_WIDTH_FRAC * world_size
+        box_h = TARGET_BOX_HEIGHT_FRAC * world_size
+        # Keep a small margin from borders
+        margin = 0.05 * world_size
+        x_min_low = POSITION_MIN + margin
+        x_min_high = POSITION_MAX - margin - box_w
+        y_min_low = POSITION_MIN + margin
+        y_min_high = POSITION_MAX - margin - box_h
+        if x_min_high <= x_min_low:
+            x_min_high = x_min_low
+        if y_min_high <= y_min_low:
+            y_min_high = y_min_low
+        self.target_x_min = float(self.np_random.uniform(x_min_low, x_min_high))
+        self.target_y_min = float(self.np_random.uniform(y_min_low, y_min_high))
+        self.target_x_max = self.target_x_min + box_w
+        self.target_y_max = self.target_y_min + box_h
+        # Initialize previous distance to target center (after target is defined)
+        tx_c = (self.target_x_min + self.target_x_max) * 0.5
+        ty_c = (self.target_y_min + self.target_y_max) * 0.5
+        dx0 = self.x - tx_c
+        dy0 = self.y - ty_c
+        self.prev_distance_to_target = float(np.sqrt(dx0 * dx0 + dy0 * dy0))
         
         # Build observation
         obs = self._get_observation()
-        info = {}
+        info = {"target_spawned": False, "in_target": False}
         
         return obs, info
     
-    def step(self, action: int) -> Tuple[np.ndarray, float, bool, bool, Dict[str, Any]]:
+    def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, bool, Dict[str, Any]]:
         """
         Execute one environment step.
         
         Args:
-            action: Discrete action (0-4)
+            action: Continuous action array [ax_cmd, ay_cmd] in [-1, 1]
             
         Returns:
             observation: New observation array
@@ -131,17 +172,29 @@ class DroneWindEnv(gym.Env):
         self._apply_physics(action)
         
         # Compute reward
-        base_reward = 1.0  # Survival reward
+        base_reward = BASE_STEP_COST  # Small time penalty
         
         # Check if drone is in target zone (only if target has spawned)
         target_spawned = self.step_count >= TARGET_SPAWN_DELAY
-        in_target = False
-        if target_spawned:
-            in_target = (
-                TARGET_X_MIN <= self.x <= TARGET_X_MAX and
-                TARGET_Y_MIN <= self.y <= TARGET_Y_MAX
-            )
+        in_target = (
+            target_spawned
+            and self.target_x_min <= self.x <= self.target_x_max
+            and self.target_y_min <= self.y <= self.target_y_max
+        )
         target_bonus = TARGET_REWARD if in_target else 0.0
+        
+        # Potential-based shaping: reward progress toward target center
+        shaping_reward = 0.0
+        # Compute current distance
+        tx_c_now = (self.target_x_min + self.target_x_max) * 0.5
+        ty_c_now = (self.target_y_min + self.target_y_max) * 0.5
+        dx_now = self.x - tx_c_now
+        dy_now = self.y - ty_c_now
+        current_distance = float(np.sqrt(dx_now * dx_now + dy_now * dy_now))
+        if target_spawned and self.prev_distance_to_target is not None:
+            shaping_reward = POTENTIAL_COEFF * (self.prev_distance_to_target - current_distance)
+        # Update previous distance
+        self.prev_distance_to_target = current_distance
         
         # Speed penalty (discourage excessive velocity)
         speed_sq = self.vx * self.vx + self.vy * self.vy
@@ -156,9 +209,19 @@ class DroneWindEnv(gym.Env):
         if min_dist < EDGE_MARGIN:
             edge_penalty = -EDGE_PENALTY_COEFF * (EDGE_MARGIN - float(min_dist)) / EDGE_MARGIN
         
-        reward = base_reward + target_bonus + speed_penalty + edge_penalty
+        # Effort penalty (hover-offset): do not penalize the vertical thrust portion that merely counters gravity
+        hover_comp = max(0.0, -GRAVITY * DT)  # upward thrust needed to counter gravity per step
+        if self.ay_applied > 0.0:
+            vertical_extra = max(0.0, self.ay_applied - hover_comp)
+        else:
+            vertical_extra = -self.ay_applied  # penalize downward thrust fully
+        # Penalize horizontal thrust fully
+        ax_eff = self.ax_applied
+        # Normalized squared effort using effective components
+        norm_sq = (ax_eff * ax_eff + vertical_extra * vertical_extra) / (THRUST * THRUST if THRUST > 0 else 1.0)
+        effort_penalty = -EFFORT_COEFF * float(norm_sq) * (EFFORT_IN_TARGET_MULT if in_target else 1.0)
         
-        # Check termination (boundary crash)
+        # Check termination (boundary crash) BEFORE computing final reward
         terminated = (
             self.x <= POSITION_MIN or 
             self.x >= POSITION_MAX or 
@@ -166,21 +229,42 @@ class DroneWindEnv(gym.Env):
             self.y >= POSITION_MAX
         )
         
+        # Apply boundary crash penalty if terminated
+        boundary_penalty = BOUNDARY_CRASH_PENALTY if terminated else 0.0
+        
+        reward = base_reward + target_bonus + speed_penalty + edge_penalty + effort_penalty + shaping_reward + boundary_penalty
+        
         # Check truncation (max steps)
         truncated = self.step_count >= MAX_STEPS
         
         # Build observation
         obs = self._get_observation()
-        
-        # Check if in target zone (only if target has spawned)
-        target_spawned = self.step_count >= TARGET_SPAWN_DELAY
-        in_target = False
+
+        # Distance to target center (when available)
+        distance_to_target = None
+        target_center = None
         if target_spawned:
-            in_target = (
-                TARGET_X_MIN <= self.x <= TARGET_X_MAX and
-                TARGET_Y_MIN <= self.y <= TARGET_Y_MAX
-            )
-        info = {"step_count": self.step_count, "in_target": in_target, "target_spawned": target_spawned}
+            tx_c = (self.target_x_min + self.target_x_max) * 0.5
+            ty_c = (self.target_y_min + self.target_y_max) * 0.5
+            target_center = (tx_c, ty_c)
+            dx = self.x - tx_c
+            dy = self.y - ty_c
+            distance_to_target = float(np.sqrt(dx * dx + dy * dy))
+        
+        info = {
+            "step_count": self.step_count,
+            "in_target": in_target,
+            "target_spawned": target_spawned,
+            "target_bounds": (self.target_x_min, self.target_x_max, self.target_y_min, self.target_y_max),
+            "thrust_applied": float(np.sqrt(self.ax_applied * self.ax_applied + self.ay_applied * self.ay_applied)),
+            "effort": -float(effort_penalty),  # positive effort cost magnitude
+            "distance_to_target": distance_to_target,
+            "target_center": target_center,
+            "distance_shaping": shaping_reward,
+            "base_cost": base_reward,
+            "speed_penalty": speed_penalty,
+            "edge_penalty": edge_penalty,
+        }
         
         return obs, reward, terminated, truncated, info
     
@@ -199,25 +283,39 @@ class DroneWindEnv(gym.Env):
         self.wind_x = np.clip(self.wind_x, -WIND_MAX, WIND_MAX)
         self.wind_y = np.clip(self.wind_y, -WIND_MAX, WIND_MAX)
     
-    def _apply_physics(self, action: int) -> None:
+    def _apply_physics(self, action: np.ndarray) -> None:
         """Apply physics update: convert action to thrust, update velocity and position."""
-        # Convert action to thrust vector
-        if action == 0:  # No thrust
-            ax, ay = 0.0, 0.0
-        elif action == 1:  # Thrust up
-            ax, ay = 0.0, THRUST
-        elif action == 2:  # Thrust down
-            ax, ay = 0.0, -THRUST
-        elif action == 3:  # Thrust left
-            ax, ay = -THRUST, 0.0
-        elif action == 4:  # Thrust right
-            ax, ay = THRUST, 0.0
+        # Expect 2D continuous action in [-1, 1]
+        ax_cmd: float
+        ay_cmd: float
+        if isinstance(action, (list, tuple, np.ndarray)) and len(action) == 2:
+            ax_cmd = float(np.clip(action[0], -1.0, 1.0))
+            ay_cmd = float(np.clip(action[1], -1.0, 1.0))
         else:
-            raise ValueError(f"Invalid action: {action}. Must be in [0, 4]")
+            # Fallback: treat invalid action as no thrust
+            ax_cmd, ay_cmd = 0.0, 0.0
+        # Map to target thrust
+        ax_target, ay_target = THRUST * ax_cmd, THRUST * ay_cmd
         
-        # Update velocity with thrust and wind
-        self.vx = self.vx + ax + self.wind_x * DT
-        self.vy = self.vy + ay + self.wind_y * DT
+        # Smooth thrust using slew limiting
+        max_delta = SLEW_RATE * DT
+        delta_ax = ax_target - self.ax_applied
+        if delta_ax > max_delta:
+            delta_ax = max_delta
+        elif delta_ax < -max_delta:
+            delta_ax = -max_delta
+        self.ax_applied += delta_ax
+        
+        delta_ay = ay_target - self.ay_applied
+        if delta_ay > max_delta:
+            delta_ay = max_delta
+        elif delta_ay < -max_delta:
+            delta_ay = -max_delta
+        self.ay_applied += delta_ay
+        
+        # Update velocity with smoothed thrust, wind and gravity
+        self.vx = self.vx + self.ax_applied + self.wind_x * DT
+        self.vy = self.vy + self.ay_applied + self.wind_y * DT + GRAVITY * DT
         # Apply linear drag (proportional to velocity) for stability
         self.vx -= DRAG_COEFF * self.vx * DT
         self.vy -= DRAG_COEFF * self.vy * DT
@@ -236,8 +334,13 @@ class DroneWindEnv(gym.Env):
     
     def _get_observation(self) -> np.ndarray:
         """Build observation array from current state."""
+        # Compute relative vector to target center
+        tx_c = (self.target_x_min + self.target_x_max) * 0.5
+        ty_c = (self.target_y_min + self.target_y_max) * 0.5
+        dx = float(tx_c - self.x)
+        dy = float(ty_c - self.y)
         return np.array(
-            [self.x, self.y, self.vx, self.vy, self.wind_x, self.wind_y],
+            [self.x, self.y, self.vx, self.vy, self.wind_x, self.wind_y, dx, dy],
             dtype=np.float32
         )
     
