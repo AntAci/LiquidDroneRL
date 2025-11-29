@@ -1,151 +1,76 @@
-# 🚁 PROJECT: AERO-LIQUID
-### *Liquid Neural Networks for Robust Drone Control in LLM-Generated Turbulence*
-
-## 👥 THE SQUAD & ROLES
-| ROLE | USER | FOCUS AREA |
-| :--- | :--- | :--- |
-| **A. The Physicist** | **@User_A** | **Environment & Config.** Master of `PyFlyt`. Defines wind dynamics, reward functions, and physics constraints. |
-| **B. The Artist** | **@User_B** | **Viz & Explainability.** Master of `Anthropic API`. Builds the "Crash Reporter" and the final visual demo/video. |
-| **C. The Brain** | **@User_C** | **Model & Training.** Master of `Torch/SB3`. Implements the Liquid Time-Constant (LTC) network and PPO training loop. |
-
+---
+title: Neuro Flyt Training
+emoji: 🚁
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
 ---
 
-## 🛠️ PHASE 0: SETUP (0.5 Hours)
-**GOAL:** Verified "Hello World" on all machines.
+# 🚁 Neuro-Flyt 3D: Liquid Neural Network Drone Control
 
-1.  **ALL:** Create Repo. `git init`.
-2.  **ALL:** Create `requirements.txt`:
-    ```text
-    gymnasium
-    PyFlyt
-    stable-baselines3
-    shimmy
-    torch
-    anthropic
-    matplotlib
-    pandas
-    ncps  # Neural Circuit Policies (for LTC cells)
+**Neuro-Flyt 3D** is a cutting-edge reinforcement learning project that trains a drone to navigate complex 3D environments with dynamic wind fields using **Liquid Neural Networks (LNNs)**.
+
+This project demonstrates the power of **Liquid Time-Constant (LTC)** networks to handle continuous-time dynamics and irregular sampling, making them ideal for robotic control tasks like drone flight in turbulent conditions.
+
+## 🌟 Key Features
+
+*   **Liquid Brain**: Uses `ncps` (Neural Circuit Policies) to implement an LTC-based feature extractor. This allows the agent to adapt to changing dynamics (like wind gusts) more effectively than standard MLPs.
+*   **3D Physics Environment**: A custom `Gymnasium` environment (`Drone3DEnv`) that simulates:
+    *   6-DOF Drone Dynamics.
+    *   **3D Perlin Noise Wind Field**: Realistic, spatially continuous wind turbulence.
+    *   "Antigravity" Force Fields (optional demo mode).
+*   **Hugging Face Spaces Integration**: Fully containerized (`Dockerfile`) for training on Hugging Face Spaces with GPU support.
+*   **PPO Algorithm**: Uses `Stable-Baselines3` Proximal Policy Optimization for robust training.
+
+## 📂 Project Structure
+
+*   `env/drone_3d.py`: **The World**. Defines the drone physics, wind field, and reward function.
+*   `models/liquid_ppo.py`: **The Brain**. Defines the PPO agent with the custom `LTCFeatureExtractor`.
+*   `train_hf.py`: **The Trainer**. Script to launch training on Hugging Face Spaces.
+*   `visualize_agent.py`: **The Demo**. Loads a trained model and generates a GIF of the drone flying.
+*   `Dockerfile`: **The Container**. Defines the environment for cloud training.
+
+## 🚀 How to Train (Hugging Face Spaces)
+
+This project is optimized to run on Hugging Face Spaces with GPU acceleration.
+
+### 1. Hardware Setup
+*   Create a Space or go to Settings.
+*   Select **T4 small** or **A10G** GPU hardware.
+
+### 2. Configuration
+The `Dockerfile` is set to train for **500,000 steps** by default.
+The `models/liquid_ppo.py` is configured for **CUDA** (GPU) and **4 parallel environments**.
+
+### 3. Deployment
+Push the code to your Space:
+```bash
+git push space abi-3d:main
+```
+*(Note: If deploying to a Space, you usually push to the `main` branch of the Space remote).*
+
+## 💻 Local Usage
+
+### Installation
+```bash
+pip install -r requirements.txt
+```
+
+### Visualization
+To see the trained agent in action:
+1.  Download `liquid_ppo_drone_final.zip` from your Space's "Files" tab.
+2.  Run:
+    ```bash
+    python visualize_agent.py
     ```
-3.  **ALL:** `pip install -r requirements.txt`
+    This will generate `drone_flight.gif`.
+
+## 🧠 The "Liquid" Advantage
+Standard neural networks (RNNs/LSTMs) have a fixed tick rate. Liquid networks are defined by differential equations, allowing them to:
+1.  **Generalize better** to unseen physics.
+2.  **Process irregular time series** (e.g., if the drone sensor lags).
+3.  **Maintain stability** in chaotic environments (like high wind).
 
 ---
-
-## 🟧 PHASE 1: THE FOUNDATION (3.0 Hours)
-**GOAL:** Environment running, API connected, Network Skeleton built.
-
-* **👩‍🔬 Physicist (Env):**
-    * Create `env/wrapper.py`.
-    * Initialize `PyFlyt/QuadX-Hover-v0`.
-    * Write a custom Wrapper to normalize observations (critical for Liquid Nets).
-    * *Deliverable:* A script that runs the drone with random actions and doesn't crash immediately.
-
-* **🎨 Artist (Claude):**
-    * Create `utils/claude_interface.py`.
-    * Write function `get_curriculum_update(metrics_dict)`.
-    * *Prompt Engineering:* "You are a Gym Instructor. Based on these success rates, output a JSON for wind_force and turbulence."
-    * *Deliverable:* A script that sends dummy data to Claude and gets valid JSON back.
-
-* **🧠 Brain (Net):**
-    * Create `models/liquid_policy.py`.
-    * Import `LTC` from `ncps.torch`.
-    * Subclass `ActorCriticPolicy` from SB3 to accept a custom `features_extractor` (the Liquid Net).
-    * *Deliverable:* A PPO model that initializes without dimension errors.
-
----
-
-## 🟩 PHASE 2: INTEGRATION & BASELINE (4.0 Hours)
-**GOAL:** Train the "Standard" model (the loser) and connect the components.
-
-* **👩‍🔬 Physicist:**
-    * Refine Reward Function in `env/rewards.py`. (Bonus for stability, heavy penalty for crashing).
-    * Assist Brain with Observation Space dimensions.
-
-* **🎨 Artist:**
-    * Create `vis/logger.py`.
-    * Set up a live plot (Matplotlib) that updates `Reward` vs `Time` every episode.
-    * *Task:* Ensure we can see the training happening in real-time.
-
-* **🧠 Brain:**
-    * **TRAINING RUN 1:** Standard PPO (MLP).
-    * Use `Stable-Baselines3` defaults.
-    * Train for 1M steps (or until stable).
-    * Save as `models/baseline_mlp.zip`.
-
----
-
-## 🟪 PHASE 3: THE LIQUID TRAINING LOOP (6.0 Hours)
-**GOAL:** Train the "Liquid" model (the winner) with AI Curriculum.
-
-* **🧠 Brain:**
-    * **TRAINING RUN 2:** Liquid PPO.
-    * Swap the MLP for the LTC module.
-    * *Critical:* Lower the learning rate! Liquid nets are volatile.
-    * Start the long training run.
-
-* **👩‍🔬 Physicist:**
-    * **The LLM Loop:** Connect the Artist's `claude_interface` to the training loop.
-    * *Logic:* Every 50,000 steps, pause training -> send stats to Claude -> update PyFlyt Wind params -> resume training.
-
-* **🎨 Artist:**
-    * While training runs, build the **"Black Box Recorder"**.
-    * Create `vis/crash_analyzer.py`.
-    * Logic: Take a `.csv` of the last 30 frames of a crash -> Send to Claude -> Display text explanation ("Crash due to sudden wind shear").
-
----
-
-## 🟫 PHASE 4: EVALUATION & POLISH (4.0 Hours)
-**GOAL:** Prove superiority.
-
-* **👩‍🔬 Physicist:**
-    * Create `eval/stress_test.py`.
-    * Load both `baseline_mlp.zip` and `liquid_ltc.zip`.
-    * Run them through a "Hurricane" scenario (Max wind).
-    * Log the survival times.
-
-* **🎨 Artist:**
-    * Create `demo/render_video.py`.
-    * Record a side-by-side video:
-        * Left: Baseline (Jittery, crashes).
-        * Right: Liquid (Smooth, adapts).
-    * Overlay the "Claude Crash Analysis" text when the Baseline crashes.
-
-* **🧠 Brain:**
-    * Generate the scientific plots.
-    * Plot: `Wind Intensity` (x-axis) vs `Reward` (y-axis).
-    * *Narrative:* "As wind increases, MLP fails. Liquid adapts."
-
----
-
-## 🟥 PHASE 5: THE PITCH (2.5 Hours)
-**GOAL:** Slides and Video.
-
-* **👩‍🔬 Physicist:** Write the "Methodology" slide. Explain *Why* PyFlyt is realistic and *How* the reward function works.
-* **🎨 Artist:** Edit the 2-minute video. Intro -> Problem (Wind) -> Solution (Liquid + Claude) -> Demo -> Outro.
-* **🧠 Brain:** Write the "Results" slide. "30% greater robustness in high winds."
-
----
-
-## ⚠️ FALLBACK PROTOCOLS (Read Continuously)
-
-1.  **Liquid Net Not Converging?**
-    * *Fix:* Switch LTC to a standard LSTM. It's less "novel" but guaranteed to work.
-2.  **PyFlyt Too Heavy?**
-    * *Fix:* Disable rendering during training. Only render for the demo video.
-3.  **Claude Rate Limit?**
-    * *Fix:* Hard-code the curriculum levels (Level 1: 5m/s wind, Level 2: 10m/s wind). Use Claude only for the final demo analysis.
-
----
-
-## 💻 KEY COMMANDS
-
-**Activate Virtual Env:**
-`source venv/bin/activate`
-
-**Train Baseline:**
-`python train.py --model mlp --curriculum static`
-
-**Train Liquid:**
-`python train.py --model ltc --curriculum claude`
-
-**Run Demo:**
-`python demo.py --compare`
+*Branch: `abi-3d`*

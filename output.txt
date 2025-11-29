@@ -1,0 +1,6 @@
+Python version: 3.14.0 (main, Oct 17 2025, 00:00:00) [GCC 15.2.1 20251022 (Red Hat 15.2.1-3)]
+Numpy imported
+Gymnasium failed: No module named 'gymnasium'
+PyFlyt failed: No module named 'PyFlyt'
+Opensimplex failed: No module named 'opensimplex'
+Ncps failed: No module named 'ncps'

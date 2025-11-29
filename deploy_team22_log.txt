@@ -1,0 +1,186 @@
+Cloning Space...
+Cloning into 'hf_deploy'...
+Copying files...
+sending incremental file list
+.gitignore
+            536 100%    0.00kB/s    0:00:00              536 100%    0.00kB/s    0:00:00 (xfr#1, to-chk=58/60)
+Dockerfile
+            622 100%  607.42kB/s    0:00:00              622 100%  607.42kB/s    0:00:00 (xfr#2, to-chk=57/60)
+README.md
+            924 100%  902.34kB/s    0:00:00              924 100%  902.34kB/s    0:00:00 (xfr#3, to-chk=56/60)
+README_HF.md
+          3,598 100%    3.43MB/s    0:00:00            3,598 100%    3.43MB/s    0:00:00 (xfr#4, to-chk=55/60)
+debug_imports.py
+            620 100%  605.47kB/s    0:00:00              620 100%  605.47kB/s    0:00:00 (xfr#5, to-chk=54/60)
+demo_3d.py
+          2,198 100%    2.10MB/s    0:00:00            2,198 100%    2.10MB/s    0:00:00 (xfr#6, to-chk=53/60)
+demo_interactive.py
+          4,050 100%    3.86MB/s    0:00:00            4,050 100%    3.86MB/s    0:00:00 (xfr#7, to-chk=52/60)
+demo_log.txt
+          2,580 100%    2.46MB/s    0:00:00            2,580 100%    2.46MB/s    0:00:00 (xfr#8, to-chk=51/60)
+demo_log_2.txt
+          2,652 100%    2.53MB/s    0:00:00            2,652 100%    2.53MB/s    0:00:00 (xfr#9, to-chk=50/60)
+demo_log_3.txt
+          5,276 100%    5.03MB/s    0:00:00            5,276 100%    5.03MB/s    0:00:00 (xfr#10, to-chk=49/60)
+demo_log_4.txt
+          5,276 100%    5.03MB/s    0:00:00            5,276 100%    5.03MB/s    0:00:00 (xfr#11, to-chk=48/60)
+demo_log_5.txt
+            295 100%  288.09kB/s    0:00:00              295 100%  288.09kB/s    0:00:00 (xfr#12, to-chk=47/60)
+deploy_log.txt
+         15,625 100%   14.90MB/s    0:00:00           15,625 100%   14.90MB/s    0:00:00 (xfr#13, to-chk=46/60)
+deploy_log_2.txt
+          9,919 100%    9.46MB/s    0:00:00            9,919 100%    9.46MB/s    0:00:00 (xfr#14, to-chk=45/60)
+deploy_team22_log.txt
+          1,877 100%    1.79MB/s    0:00:00            1,877 100%    1.79MB/s    0:00:00 (xfr#15, to-chk=44/60)
+install_log.txt
+         14,311 100%   13.65MB/s    0:00:00           14,311 100%   13.65MB/s    0:00:00 (xfr#16, to-chk=43/60)
+interactive_log.txt
+            236 100%  230.47kB/s    0:00:00              236 100%  230.47kB/s    0:00:00 (xfr#17, to-chk=42/60)
+main.py
+          4,348 100%    4.15MB/s    0:00:00            4,348 100%    4.15MB/s    0:00:00 (xfr#18, to-chk=41/60)
+output.txt
+            281 100%  274.41kB/s    0:00:00              281 100%  274.41kB/s    0:00:00 (xfr#19, to-chk=40/60)
+pip_log.txt
+          5,014 100%    4.78MB/s    0:00:00            5,014 100%    4.78MB/s    0:00:00 (xfr#20, to-chk=39/60)
+pybullet_bin_log.txt
+            223 100%  217.77kB/s    0:00:00              223 100%  217.77kB/s    0:00:00 (xfr#21, to-chk=38/60)
+pybullet_log.txt
+         32,768  25%   31.25MB/s    0:00:00          129,509 100%   13.72MB/s    0:00:00 (xfr#22, to-chk=37/60)
+pygame_log.txt
+            219 100%   23.76kB/s    0:00:00              219 100%   23.76kB/s    0:00:00 (xfr#23, to-chk=36/60)
+requirements.txt
+            194 100%   21.05kB/s    0:00:00              194 100%   21.05kB/s    0:00:00 (xfr#24, to-chk=35/60)
+run_demo.sh
+            178 100%   19.31kB/s    0:00:00              178 100%   19.31kB/s    0:00:00 (xfr#25, to-chk=34/60)
+setup.sh
+            978 100%  106.12kB/s    0:00:00              978 100%  106.12kB/s    0:00:00 (xfr#26, to-chk=33/60)
+test_log.txt
+            964 100%  104.60kB/s    0:00:00              964 100%  104.60kB/s    0:00:00 (xfr#27, to-chk=32/60)
+test_physics.py
+          1,311 100%  142.25kB/s    0:00:00            1,311 100%  142.25kB/s    0:00:00 (xfr#28, to-chk=31/60)
+test_random_1.txt
+            318 100%   34.51kB/s    0:00:00              318 100%   34.51kB/s    0:00:00 (xfr#29, to-chk=30/60)
+test_random_2.txt
+            315 100%   34.18kB/s    0:00:00              315 100%   34.18kB/s    0:00:00 (xfr#30, to-chk=29/60)
+test_result_final.txt
+            263 100%   28.54kB/s    0:00:00              263 100%   28.54kB/s    0:00:00 (xfr#31, to-chk=28/60)
+test_success.txt
+            263 100%   28.54kB/s    0:00:00              263 100%   28.54kB/s    0:00:00 (xfr#32, to-chk=27/60)
+train.py
+          1,205 100%  130.75kB/s    0:00:00            1,205 100%  130.75kB/s    0:00:00 (xfr#33, to-chk=26/60)
+train_hf.py
+          2,277 100%  247.07kB/s    0:00:00            2,277 100%  247.07kB/s    0:00:00 (xfr#34, to-chk=25/60)
+train_log_500k.txt
+         32,768  39%    3.47MB/s    0:00:00           83,713 100%    5.70MB/s    0:00:00 (xfr#35, to-chk=24/60)
+train_log_full.txt
+          3,044 100%  198.18kB/s    0:00:00            3,044 100%  198.18kB/s    0:00:00 (xfr#36, to-chk=23/60)
+train_log_retry.txt
+         14,709 100%  957.62kB/s    0:00:00           14,709 100%  957.62kB/s    0:00:00 (xfr#37, to-chk=22/60)
+demo/
+demo/__init__.py
+             39 100%    2.54kB/s    0:00:00               39 100%    2.54kB/s    0:00:00 (xfr#38, to-chk=15/60)
+demo/visualize_drone.py
+         16,089 100%    1.02MB/s    0:00:00           16,089 100%    1.02MB/s    0:00:00 (xfr#39, to-chk=14/60)
+env/
+env/__init__.py
+             62 100%    4.04kB/s    0:00:00               62 100%    4.04kB/s    0:00:00 (xfr#40, to-chk=13/60)
+env/drone_3d.py
+          5,304 100%  345.31kB/s    0:00:00            5,304 100%  345.31kB/s    0:00:00 (xfr#41, to-chk=12/60)
+env/drone_env.py
+         10,099 100%  657.49kB/s    0:00:00           10,099 100%  657.49kB/s    0:00:00 (xfr#42, to-chk=11/60)
+eval/
+eval/__init__.py
+             41 100%    2.67kB/s    0:00:00               41 100%    2.67kB/s    0:00:00 (xfr#43, to-chk=10/60)
+eval/eval_liquid_policy.py
+          5,742 100%  373.83kB/s    0:00:00            5,742 100%  373.83kB/s    0:00:00 (xfr#44, to-chk=9/60)
+eval/eval_mlp_baseline.py
+          5,570 100%  362.63kB/s    0:00:00            5,570 100%  362.63kB/s    0:00:00 (xfr#45, to-chk=8/60)
+models/
+models/__init__.py
+             44 100%    2.86kB/s    0:00:00               44 100%    2.86kB/s    0:00:00 (xfr#46, to-chk=7/60)
+models/liquid_cell.py
+          3,168 100%  206.25kB/s    0:00:00            3,168 100%  206.25kB/s    0:00:00 (xfr#47, to-chk=6/60)
+models/liquid_policy.py
+          2,690 100%  175.13kB/s    0:00:00            2,690 100%  175.13kB/s    0:00:00 (xfr#48, to-chk=5/60)
+models/liquid_ppo.py
+          4,141 100%  192.57kB/s    0:00:00            4,141 100%  183.82kB/s    0:00:00 (xfr#49, to-chk=4/60)
+train/
+train/__init__.py
+             39 100%    1.73kB/s    0:00:00               39 100%    1.73kB/s    0:00:00 (xfr#50, to-chk=3/60)
+train/train_liquid_ppo.py
+          6,619 100%  293.81kB/s    0:00:00            6,619 100%  293.81kB/s    0:00:00 (xfr#51, to-chk=2/60)
+train/train_mlp_ppo.py
+          4,442 100%  197.18kB/s    0:00:00            4,442 100%  197.18kB/s    0:00:00 (xfr#52, to-chk=1/60)
+utils/
+utils/__init__.py
+             38 100%    1.69kB/s    0:00:00               38 100%    1.69kB/s    0:00:00 (xfr#53, to-chk=0/60)
+
+sent 388,029 bytes  received 1,059 bytes  778,176.00 bytes/sec
+total size is 382,263  speedup is 0.98
+[main 6083286] Deploy Neuro-Flyt 3D Training
+ 53 files changed, 9686 insertions(+), 11 deletions(-)
+ create mode 100644 .gitignore
+ create mode 100644 Dockerfile
+ create mode 100644 README_HF.md
+ create mode 100644 debug_imports.py
+ create mode 100644 demo/__init__.py
+ create mode 100644 demo/visualize_drone.py
+ create mode 100644 demo_3d.py
+ create mode 100644 demo_interactive.py
+ create mode 100644 demo_log.txt
+ create mode 100644 demo_log_2.txt
+ create mode 100644 demo_log_3.txt
+ create mode 100644 demo_log_4.txt
+ create mode 100644 demo_log_5.txt
+ create mode 100644 deploy_log.txt
+ create mode 100644 deploy_log_2.txt
+ create mode 100644 deploy_team22_log.txt
+ create mode 100644 env/__init__.py
+ create mode 100644 env/drone_3d.py
+ create mode 100644 env/drone_env.py
+ create mode 100644 eval/__init__.py
+ create mode 100644 eval/eval_liquid_policy.py
+ create mode 100644 eval/eval_mlp_baseline.py
+ create mode 100644 install_log.txt
+ create mode 100644 interactive_log.txt
+ create mode 100644 main.py
+ create mode 100644 models/__init__.py
+ create mode 100644 models/liquid_cell.py
+ create mode 100644 models/liquid_policy.py
+ create mode 100644 models/liquid_ppo.py
+ create mode 100644 output.txt
+ create mode 100644 pip_log.txt
+ create mode 100644 pybullet_bin_log.txt
+ create mode 100644 pybullet_log.txt
+ create mode 100644 pygame_log.txt
+ create mode 100644 requirements.txt
+ create mode 100755 run_demo.sh
+ create mode 100755 setup.sh
+ create mode 100644 test_log.txt
+ create mode 100644 test_physics.py
+ create mode 100644 test_random_1.txt
+ create mode 100644 test_random_2.txt
+ create mode 100644 test_result_final.txt
+ create mode 100644 test_success.txt
+ create mode 100644 train.py
+ create mode 100644 train/__init__.py
+ create mode 100644 train/train_liquid_ppo.py
+ create mode 100644 train/train_mlp_ppo.py
+ create mode 100644 train_hf.py
+ create mode 100644 train_log_500k.txt
+ create mode 100644 train_log_full.txt
+ create mode 100644 train_log_retry.txt
+ create mode 100644 utils/__init__.py
+remote: [33m-------------------------------------------------------------------------[0m        
+remote: [33mYour push was accepted, but with warnings: [0m        
+remote: [33m- Warning: empty or missing yaml metadata in repo card[0m        
+remote: [33mhelp: https://huggingface.co/docs/hub/spaces-config-reference[0m        
+remote: [33m-------------------------------------------------------------------------[0m        
+remote: [32m-------------------------------------------------------------------------[0m        
+remote: [32mPlease find the documentation at:[0m        
+remote: [32mhttps://huggingface.co/docs/hub/model-cards#model-card-metadata[0m        
+remote: [32m[0m        
+remote: [32m-------------------------------------------------------------------------[0m        
+To https://huggingface.co/spaces/iteratehack/team_22
+   0c9c53a..6083286  main -> main
+Deployment Complete!

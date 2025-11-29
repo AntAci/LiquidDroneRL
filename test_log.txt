@@ -1,0 +1,14 @@
+Testing Wind Physics...
+Traceback (most recent call last):
+  File "/home/ylop/Documents/drone go brr/Drone-go-brrrrr/Drone-go-brrrrr/test_physics.py", line 41, in <module>
+    test_wind_physics()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/home/ylop/Documents/drone go brr/Drone-go-brrrrr/Drone-go-brrrrr/test_physics.py", line 11, in test_wind_physics
+    obs, _, _, _, info = env.step(np.zeros(4)) # Hover action (approx)
+                         ~~~~~~~~^^^^^^^^^^^^^
+  File "/home/ylop/Documents/drone go brr/Drone-go-brrrrr/Drone-go-brrrrr/env/drone_3d.py", line 66, in step
+    raw_wind = self.wind_field.get_wind(pos[0], pos[1], pos[2], self.dt)
+  File "/home/ylop/Documents/drone go brr/Drone-go-brrrrr/Drone-go-brrrrr/env/drone_3d.py", line 27, in get_wind
+    u = self.noise.noise4d(x * self.scale, y * self.scale, z * self.scale, self.time_offset)
+        ^^^^^^^^^^^^^^^^^^
+AttributeError: 'OpenSimplex' object has no attribute 'noise4d'. Did you mean: 'noise4'?

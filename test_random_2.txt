@@ -1,0 +1,8 @@
+Testing Wind Physics...
+Initial Wind Vector: [2.32121281 1.08356691 0.06257384]
+Target Location: [ 1.08129528  4.75833083 13.20958488]
+SUCCESS: Wind vector is non-zero.
+Stepping environment to test temporal variation...
+Mean frame-to-frame wind change: 1.0202
+SUCCESS: Wind varies over time.
+Physics Test Complete.

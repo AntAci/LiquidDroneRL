@@ -1,0 +1,93 @@
+Defaulting to user installation because normal site-packages is not writeable
+Collecting torch>=2.0.0 (from -r requirements.txt (line 1))
+  Using cached torch-2.9.1-cp314-cp314-manylinux_2_28_x86_64.whl.metadata (30 kB)
+Collecting gymnasium>=0.29.0 (from -r requirements.txt (line 2))
+  Using cached gymnasium-1.2.2-py3-none-any.whl.metadata (10 kB)
+Collecting pygame>=2.5.0 (from -r requirements.txt (line 3))
+  Using cached pygame-2.6.1.tar.gz (14.8 MB)
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Getting requirements to build wheel: started
+  Getting requirements to build wheel: finished with status 'error'
+  error: subprocess-exited-with-error
+  
+  × Getting requirements to build wheel did not run successfully.
+  │ exit code: 1
+  ╰─> [67 lines of output]
+      Skipping Cython compilation
+      
+      
+      WARNING, No "Setup" File Exists, Running "buildconfig/config.py"
+      Using UNIX configuration...
+      
+      /bin/sh: line 1: dpkg-architecture: command not found
+      /bin/sh: line 1: gcc: command not found
+      /bin/sh: line 1: gcc: command not found
+      /bin/sh: line 1: sdl2-config: command not found
+      /bin/sh: line 1: sdl2-config: command not found
+      /bin/sh: line 1: sdl2-config: command not found
+      Package freetype2 was not found in the pkg-config search path.
+      Perhaps you should add the directory containing `freetype2.pc'
+      to the PKG_CONFIG_PATH environment variable
+      Package 'freetype2' not found
+      Package freetype2 was not found in the pkg-config search path.
+      Perhaps you should add the directory containing `freetype2.pc'
+      to the PKG_CONFIG_PATH environment variable
+      Package 'freetype2' not found
+      Package freetype2 was not found in the pkg-config search path.
+      Perhaps you should add the directory containing `freetype2.pc'
+      to the PKG_CONFIG_PATH environment variable
+      Package 'freetype2' not found
+      /bin/sh: line 1: freetype-config: command not found
+      /bin/sh: line 1: freetype-config: command not found
+      /bin/sh: line 1: freetype-config: command not found
+      
+      Hunting dependencies...
+      WARNING: "sdl2-config" failed!
+      WARNING: "pkg-config freetype2" failed!
+      WARNING: "freetype-config" failed!
+      
+      ---
+      For help with compilation see:
+          https://www.pygame.org/wiki/Compilation
+      To contribute to pygame development see:
+          https://www.pygame.org/contribute.html
+      ---
+      
+      Traceback (most recent call last):
+        File "/usr/lib/python3.14/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 389, in <module>
+          main()
+          ~~~~^^
+        File "/usr/lib/python3.14/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 373, in main
+          json_out["return_val"] = hook(**hook_input["kwargs"])
+                                   ~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+        File "/usr/lib/python3.14/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 143, in get_requires_for_build_wheel
+          return hook(config_settings)
+        File "/tmp/pip-build-env-9_tn2xvg/overlay/lib/python3.14/site-packages/setuptools/build_meta.py", line 331, in get_requires_for_build_wheel
+          return self._get_build_requires(config_settings, requirements=[])
+                 ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "/tmp/pip-build-env-9_tn2xvg/overlay/lib/python3.14/site-packages/setuptools/build_meta.py", line 301, in _get_build_requires
+          self.run_setup()
+          ~~~~~~~~~~~~~~^^
+        File "/tmp/pip-build-env-9_tn2xvg/overlay/lib/python3.14/site-packages/setuptools/build_meta.py", line 512, in run_setup
+          super().run_setup(setup_script=setup_script)
+          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "/tmp/pip-build-env-9_tn2xvg/overlay/lib/python3.14/site-packages/setuptools/build_meta.py", line 317, in run_setup
+          exec(code, locals())
+          ~~~~^^^^^^^^^^^^^^^^
+        File "<string>", line 432, in <module>
+        File "/tmp/pip-install-tmizgydo/pygame_66dd0a904d484e059768cb5e32cd4cf6/buildconfig/config.py", line 234, in main
+          deps = CFG.main(**kwds, auto_config=auto)
+        File "/tmp/pip-install-tmizgydo/pygame_66dd0a904d484e059768cb5e32cd4cf6/buildconfig/config_unix.py", line 245, in main
+          raise RuntimeError('Unable to run "sdl-config". Please make sure a development version of SDL is installed.')
+      RuntimeError: Unable to run "sdl-config". Please make sure a development version of SDL is installed.
+      [end of output]
+  
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+error: subprocess-exited-with-error
+
+× Getting requirements to build wheel did not run successfully.
+│ exit code: 1
+╰─> See above for output.
+
+note: This error originates from a subprocess, and is likely not a problem with pip.

@@ -1,0 +1,11 @@
+Loading model from: liquid_ppo_drone_final.zip
+Traceback (most recent call last):
+  File "/home/ylop/Documents/drone go brr/Drone-go-brrrrr/Drone-go-brrrrr/visualize_agent.py", line 84, in <module>
+    run_visualization(path)
+    ~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/ylop/Documents/drone go brr/Drone-go-brrrrr/Drone-go-brrrrr/visualize_agent.py", line 24, in run_visualization
+    model = PPO.load(model_path, env=env, device='cpu')
+  File "/home/ylop/.local/lib/python3.14/site-packages/stable_baselines3/common/base_class.py", line 688, in load
+    assert data is not None, "No data found in the saved file"
+           ^^^^^^^^^^^^^^^^
+AssertionError: No data found in the saved file

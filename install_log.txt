@@ -1,0 +1,197 @@
+Defaulting to user installation because normal site-packages is not writeable
+Collecting PyFlyt
+  Downloading pyflyt-0.29.0-py3-none-any.whl.metadata (5.2 kB)
+Downloading pyflyt-0.29.0-py3-none-any.whl (215 kB)
+Installing collected packages: PyFlyt
+Successfully installed PyFlyt-0.29.0
+Defaulting to user installation because normal site-packages is not writeable
+Requirement already satisfied: numpy in /usr/lib64/python3.14/site-packages (2.3.5)
+Collecting gymnasium
+  Using cached gymnasium-1.2.2-py3-none-any.whl.metadata (10 kB)
+Collecting opensimplex
+  Downloading opensimplex-0.4.5.1-py3-none-any.whl.metadata (10 kB)
+Collecting ncps
+  Downloading ncps-1.0.1-py3-none-any.whl.metadata (702 bytes)
+Collecting stable-baselines3
+  Downloading stable_baselines3-2.7.0-py3-none-any.whl.metadata (4.8 kB)
+Collecting rich
+  Downloading rich-14.2.0-py3-none-any.whl.metadata (18 kB)
+Collecting tqdm
+  Downloading tqdm-4.67.1-py3-none-any.whl.metadata (57 kB)
+Collecting cloudpickle>=1.2.0 (from gymnasium)
+  Downloading cloudpickle-3.1.2-py3-none-any.whl.metadata (7.1 kB)
+Requirement already satisfied: typing-extensions>=4.3.0 in /usr/lib/python3.14/site-packages (from gymnasium) (4.15.0)
+Collecting farama-notifications>=0.0.1 (from gymnasium)
+  Downloading Farama_Notifications-0.0.4-py3-none-any.whl.metadata (558 bytes)
+Collecting future (from ncps)
+  Downloading future-1.0.0-py3-none-any.whl.metadata (4.0 kB)
+Requirement already satisfied: packaging in /usr/lib/python3.14/site-packages (from ncps) (25.0)
+Collecting torch<3.0,>=2.3 (from stable-baselines3)
+  Using cached torch-2.9.1-cp314-cp314-manylinux_2_28_x86_64.whl.metadata (30 kB)
+Collecting pandas (from stable-baselines3)
+  Downloading pandas-2.3.3-cp314-cp314-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (91 kB)
+Collecting matplotlib (from stable-baselines3)
+  Downloading matplotlib-3.10.7-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (11 kB)
+Collecting filelock (from torch<3.0,>=2.3->stable-baselines3)
+  Downloading filelock-3.20.0-py3-none-any.whl.metadata (2.1 kB)
+Requirement already satisfied: setuptools in /usr/lib/python3.14/site-packages (from torch<3.0,>=2.3->stable-baselines3) (78.1.1)
+Collecting sympy>=1.13.3 (from torch<3.0,>=2.3->stable-baselines3)
+  Downloading sympy-1.14.0-py3-none-any.whl.metadata (12 kB)
+Collecting networkx>=2.5.1 (from torch<3.0,>=2.3->stable-baselines3)
+  Downloading networkx-3.6-py3-none-any.whl.metadata (6.8 kB)
+Requirement already satisfied: jinja2 in /usr/lib/python3.14/site-packages (from torch<3.0,>=2.3->stable-baselines3) (3.1.6)
+Collecting fsspec>=0.8.5 (from torch<3.0,>=2.3->stable-baselines3)
+  Downloading fsspec-2025.10.0-py3-none-any.whl.metadata (10 kB)
+Collecting nvidia-cuda-nvrtc-cu12==12.8.93 (from torch<3.0,>=2.3->stable-baselines3)
+  Downloading nvidia_cuda_nvrtc_cu12-12.8.93-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl.metadata (1.7 kB)
+Collecting nvidia-cuda-runtime-cu12==12.8.90 (from torch<3.0,>=2.3->stable-baselines3)
+  Downloading nvidia_cuda_runtime_cu12-12.8.90-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (1.7 kB)
+Collecting nvidia-cuda-cupti-cu12==12.8.90 (from torch<3.0,>=2.3->stable-baselines3)
+  Downloading nvidia_cuda_cupti_cu12-12.8.90-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (1.7 kB)
+Collecting nvidia-cudnn-cu12==9.10.2.21 (from torch<3.0,>=2.3->stable-baselines3)
+  Downloading nvidia_cudnn_cu12-9.10.2.21-py3-none-manylinux_2_27_x86_64.whl.metadata (1.8 kB)
+Collecting nvidia-cublas-cu12==12.8.4.1 (from torch<3.0,>=2.3->stable-baselines3)
+  Downloading nvidia_cublas_cu12-12.8.4.1-py3-none-manylinux_2_27_x86_64.whl.metadata (1.7 kB)
+Collecting nvidia-cufft-cu12==11.3.3.83 (from torch<3.0,>=2.3->stable-baselines3)
+  Downloading nvidia_cufft_cu12-11.3.3.83-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (1.7 kB)
+Collecting nvidia-curand-cu12==10.3.9.90 (from torch<3.0,>=2.3->stable-baselines3)
+  Downloading nvidia_curand_cu12-10.3.9.90-py3-none-manylinux_2_27_x86_64.whl.metadata (1.7 kB)
+Collecting nvidia-cusolver-cu12==11.7.3.90 (from torch<3.0,>=2.3->stable-baselines3)
+  Downloading nvidia_cusolver_cu12-11.7.3.90-py3-none-manylinux_2_27_x86_64.whl.metadata (1.8 kB)
+Collecting nvidia-cusparse-cu12==12.5.8.93 (from torch<3.0,>=2.3->stable-baselines3)
+  Downloading nvidia_cusparse_cu12-12.5.8.93-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (1.8 kB)
+Collecting nvidia-cusparselt-cu12==0.7.1 (from torch<3.0,>=2.3->stable-baselines3)
+  Downloading nvidia_cusparselt_cu12-0.7.1-py3-none-manylinux2014_x86_64.whl.metadata (7.0 kB)
+Collecting nvidia-nccl-cu12==2.27.5 (from torch<3.0,>=2.3->stable-baselines3)
+  Downloading nvidia_nccl_cu12-2.27.5-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.0 kB)
+Collecting nvidia-nvshmem-cu12==3.3.20 (from torch<3.0,>=2.3->stable-baselines3)
+  Downloading nvidia_nvshmem_cu12-3.3.20-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.1 kB)
+Collecting nvidia-nvtx-cu12==12.8.90 (from torch<3.0,>=2.3->stable-baselines3)
+  Downloading nvidia_nvtx_cu12-12.8.90-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (1.8 kB)
+Collecting nvidia-nvjitlink-cu12==12.8.93 (from torch<3.0,>=2.3->stable-baselines3)
+  Downloading nvidia_nvjitlink_cu12-12.8.93-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl.metadata (1.7 kB)
+Collecting nvidia-cufile-cu12==1.13.1.3 (from torch<3.0,>=2.3->stable-baselines3)
+  Downloading nvidia_cufile_cu12-1.13.1.3-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (1.7 kB)
+Collecting triton==3.5.1 (from torch<3.0,>=2.3->stable-baselines3)
+  Downloading triton-3.5.1-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (1.7 kB)
+Collecting markdown-it-py>=2.2.0 (from rich)
+  Downloading markdown_it_py-4.0.0-py3-none-any.whl.metadata (7.3 kB)
+Requirement already satisfied: pygments<3.0.0,>=2.13.0 in /usr/lib/python3.14/site-packages (from rich) (2.19.1)
+Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich)
+  Downloading mdurl-0.1.2-py3-none-any.whl.metadata (1.6 kB)
+Collecting mpmath<1.4,>=1.1.0 (from sympy>=1.13.3->torch<3.0,>=2.3->stable-baselines3)
+  Downloading mpmath-1.3.0-py3-none-any.whl.metadata (8.6 kB)
+Requirement already satisfied: MarkupSafe>=2.0 in /usr/lib64/python3.14/site-packages (from jinja2->torch<3.0,>=2.3->stable-baselines3) (3.0.2)
+Collecting contourpy>=1.0.1 (from matplotlib->stable-baselines3)
+  Downloading contourpy-1.3.3-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (5.5 kB)
+Collecting cycler>=0.10 (from matplotlib->stable-baselines3)
+  Using cached cycler-0.12.1-py3-none-any.whl.metadata (3.8 kB)
+Collecting fonttools>=4.22.0 (from matplotlib->stable-baselines3)
+  Downloading fonttools-4.61.0-cp314-cp314-manylinux1_x86_64.manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_5_x86_64.whl.metadata (113 kB)
+Collecting kiwisolver>=1.3.1 (from matplotlib->stable-baselines3)
+  Downloading kiwisolver-1.4.9-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (6.3 kB)
+Requirement already satisfied: pillow>=8 in /usr/lib64/python3.14/site-packages (from matplotlib->stable-baselines3) (11.3.0)
+Requirement already satisfied: pyparsing>=3 in /usr/lib/python3.14/site-packages (from matplotlib->stable-baselines3) (3.1.2)
+Requirement already satisfied: python-dateutil>=2.7 in /usr/lib/python3.14/site-packages (from matplotlib->stable-baselines3) (2.9.0.post0)
+Requirement already satisfied: six>=1.5 in /usr/lib/python3.14/site-packages (from python-dateutil>=2.7->matplotlib->stable-baselines3) (1.17.0)
+Collecting pytz>=2020.1 (from pandas->stable-baselines3)
+  Downloading pytz-2025.2-py2.py3-none-any.whl.metadata (22 kB)
+Collecting tzdata>=2022.7 (from pandas->stable-baselines3)
+  Downloading tzdata-2025.2-py2.py3-none-any.whl.metadata (1.4 kB)
+Downloading gymnasium-1.2.2-py3-none-any.whl (952 kB)
+   ━━ 9… 1… eta 0:0…
+      kB M…         
+Downloading opensimplex-0.4.5.1-py3-none-any.whl (267 kB)
+Downloading ncps-1.0.1-py3-none-any.whl (60 kB)
+Downloading stable_baselines3-2.7.0-py3-none-any.whl (187 kB)
+Downloading torch-2.9.1-cp314-cp314-manylinux_2_28_x86_64.whl (899.7 MB)
+   ━━ 8… 2… eta 0:0…
+      MB M…         
+Downloading nvidia_cublas_cu12-12.8.4.1-py3-none-manylinux_2_27_x86_64.whl (594.3 MB)
+   ━━ 5… 2… eta 0:0…
+      MB M…         
+Downloading nvidia_cuda_cupti_cu12-12.8.90-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (10.2 MB)
+   ━━ 1… 3… eta 0:0…
+      MB M…         
+Downloading nvidia_cuda_nvrtc_cu12-12.8.93-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl (88.0 MB)
+   ━━ 8… 3… eta 0:0…
+      MB M…         
+Downloading nvidia_cuda_runtime_cu12-12.8.90-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (954 kB)
+   ━━ 9… 2… eta 0:0…
+      kB M…         
+Downloading nvidia_cudnn_cu12-9.10.2.21-py3-none-manylinux_2_27_x86_64.whl (706.8 MB)
+   ━━ 7… 2… eta 0:0…
+      MB M…         
+Downloading nvidia_cufft_cu12-11.3.3.83-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (193.1 MB)
+   ━━ 1… 1… eta 0:0…
+      MB M…         
+Downloading nvidia_cufile_cu12-1.13.1.3-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (1.2 MB)
+   ━━ 1… 7… eta 0:0…
+      MB M…         
+Downloading nvidia_curand_cu12-10.3.9.90-py3-none-manylinux_2_27_x86_64.whl (63.6 MB)
+   ━━ 6… 1… eta 0:0…
+      MB M…         
+Downloading nvidia_cusolver_cu12-11.7.3.90-py3-none-manylinux_2_27_x86_64.whl (267.5 MB)
+   ━━ 2… 1… eta 0:0…
+      MB M…         
+Downloading nvidia_cusparse_cu12-12.5.8.93-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (288.2 MB)
+   ━━ 2… 1… eta 0:0…
+      MB M…         
+Downloading nvidia_cusparselt_cu12-0.7.1-py3-none-manylinux2014_x86_64.whl (287.2 MB)
+   ━━ 2… 2… eta 0:0…
+      MB M…         
+Downloading nvidia_nccl_cu12-2.27.5-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (322.3 MB)
+   ━━ 3… 1… eta 0:0…
+      MB M…         
+Downloading nvidia_nvjitlink_cu12-12.8.93-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl (39.3 MB)
+   ━━ 3… 1… eta 0:0…
+      MB M…         
+Downloading nvidia_nvshmem_cu12-3.3.20-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (124.7 MB)
+   ━━ 1… 1… eta 0:0…
+      MB M…         
+Downloading nvidia_nvtx_cu12-12.8.90-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (89 kB)
+Downloading triton-3.5.1-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (170.5 MB)
+   ━━ 1… 3… eta 0:0…
+      MB M…         
+Downloading rich-14.2.0-py3-none-any.whl (243 kB)
+Downloading tqdm-4.67.1-py3-none-any.whl (78 kB)
+Downloading cloudpickle-3.1.2-py3-none-any.whl (22 kB)
+Downloading Farama_Notifications-0.0.4-py3-none-any.whl (2.5 kB)
+Downloading fsspec-2025.10.0-py3-none-any.whl (200 kB)
+Downloading markdown_it_py-4.0.0-py3-none-any.whl (87 kB)
+Downloading mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+Downloading networkx-3.6-py3-none-any.whl (2.1 MB)
+   ━━ 2… 3… eta 0:0…
+      MB M…         
+Downloading sympy-1.14.0-py3-none-any.whl (6.3 MB)
+   ━━ 6… 3… eta 0:0…
+      MB M…         
+Downloading mpmath-1.3.0-py3-none-any.whl (536 kB)
+   ━━ 5… 1… eta 0:0…
+      kB M…         
+Downloading filelock-3.20.0-py3-none-any.whl (16 kB)
+Downloading future-1.0.0-py3-none-any.whl (491 kB)
+Downloading matplotlib-3.10.7-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (9.8 MB)
+   ━━ 9… 3… eta 0:0…
+      MB M…         
+Downloading contourpy-1.3.3-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (363 kB)
+Using cached cycler-0.12.1-py3-none-any.whl (8.3 kB)
+Downloading fonttools-4.61.0-cp314-cp314-manylinux1_x86_64.manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_5_x86_64.whl (4.9 MB)
+   ━━ 4… 3… eta 0:0…
+      MB M…         
+Downloading kiwisolver-1.4.9-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (1.5 MB)
+   ━━ 1… 2… eta 0:0…
+      MB M…         
+Downloading pandas-2.3.3-cp314-cp314-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (12.3 MB)
+   ━━ 1… 3… eta 0:0…
+      MB M…         
+Downloading pytz-2025.2-py2.py3-none-any.whl (509 kB)
+Downloading tzdata-2025.2-py2.py3-none-any.whl (347 kB)
+Installing collected packages: pytz, nvidia-cusparselt-cu12, mpmath, farama-notifications, tzdata, triton, tqdm, sympy, opensimplex, nvidia-nvtx-cu12, nvidia-nvshmem-cu12, nvidia-nvjitlink-cu12, nvidia-nccl-cu12, nvidia-curand-cu12, nvidia-cufile-cu12, nvidia-cuda-runtime-cu12, nvidia-cuda-nvrtc-cu12, nvidia-cuda-cupti-cu12, nvidia-cublas-cu12, networkx, mdurl, kiwisolver, future, fsspec, fonttools, filelock, cycler, contourpy, cloudpickle, pandas, nvidia-cusparse-cu12, nvidia-cufft-cu12, nvidia-cudnn-cu12, ncps, matplotlib, markdown-it-py, gymnasium, rich, nvidia-cusolver-cu12, torch, stable-baselines3
+
+ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
+pyflyt 0.29.0 requires numba, which is not installed.
+pyflyt 0.29.0 requires pettingzoo, which is not installed.
+pyflyt 0.29.0 requires pybullet, which is not installed.
+pyflyt 0.29.0 requires numpy<2.0.0, but you have numpy 2.3.5 which is incompatible.
+Successfully installed cloudpickle-3.1.2 contourpy-1.3.3 cycler-0.12.1 farama-notifications-0.0.4 filelock-3.20.0 fonttools-4.61.0 fsspec-2025.10.0 future-1.0.0 gymnasium-1.2.2 kiwisolver-1.4.9 markdown-it-py-4.0.0 matplotlib-3.10.7 mdurl-0.1.2 mpmath-1.3.0 ncps-1.0.1 networkx-3.6 nvidia-cublas-cu12-12.8.4.1 nvidia-cuda-cupti-cu12-12.8.90 nvidia-cuda-nvrtc-cu12-12.8.93 nvidia-cuda-runtime-cu12-12.8.90 nvidia-cudnn-cu12-9.10.2.21 nvidia-cufft-cu12-11.3.3.83 nvidia-cufile-cu12-1.13.1.3 nvidia-curand-cu12-10.3.9.90 nvidia-cusolver-cu12-11.7.3.90 nvidia-cusparse-cu12-12.5.8.93 nvidia-cusparselt-cu12-0.7.1 nvidia-nccl-cu12-2.27.5 nvidia-nvjitlink-cu12-12.8.93 nvidia-nvshmem-cu12-3.3.20 nvidia-nvtx-cu12-12.8.90 opensimplex-0.4.5.1 pandas-2.3.3 pytz-2025.2 rich-14.2.0 stable-baselines3-2.7.0 sympy-1.14.0 torch-2.9.1 tqdm-4.67.1 triton-3.5.1 tzdata-2025.2

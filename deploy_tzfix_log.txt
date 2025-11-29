@@ -1,0 +1,145 @@
+Cloning Space...
+Cloning into 'hf_deploy'...
+Copying files...
+sending incremental file list
+.gitignore
+            536 100%    0.00kB/s    0:00:00              536 100%    0.00kB/s    0:00:00 (xfr#1, to-chk=63/65)
+Dockerfile
+            653 100%  637.70kB/s    0:00:00              653 100%  637.70kB/s    0:00:00 (xfr#2, to-chk=62/65)
+README.md
+          1,030 100% 1005.86kB/s    0:00:00            1,030 100% 1005.86kB/s    0:00:00 (xfr#3, to-chk=61/65)
+README_HF.md
+          3,598 100%    3.43MB/s    0:00:00            3,598 100%    3.43MB/s    0:00:00 (xfr#4, to-chk=60/65)
+check_status.py
+            645 100%  629.88kB/s    0:00:00              645 100%  629.88kB/s    0:00:00 (xfr#5, to-chk=59/65)
+debug_imports.py
+            620 100%  605.47kB/s    0:00:00              620 100%  605.47kB/s    0:00:00 (xfr#6, to-chk=58/65)
+demo_3d.py
+          2,198 100%    2.10MB/s    0:00:00            2,198 100%    2.10MB/s    0:00:00 (xfr#7, to-chk=57/65)
+demo_interactive.py
+          4,050 100%    3.86MB/s    0:00:00            4,050 100%    3.86MB/s    0:00:00 (xfr#8, to-chk=56/65)
+demo_log.txt
+          2,580 100%    2.46MB/s    0:00:00            2,580 100%    2.46MB/s    0:00:00 (xfr#9, to-chk=55/65)
+demo_log_2.txt
+          2,652 100%    2.53MB/s    0:00:00            2,652 100%    2.53MB/s    0:00:00 (xfr#10, to-chk=54/65)
+demo_log_3.txt
+          5,276 100%    5.03MB/s    0:00:00            5,276 100%    5.03MB/s    0:00:00 (xfr#11, to-chk=53/65)
+demo_log_4.txt
+          5,276 100%    5.03MB/s    0:00:00            5,276 100%    5.03MB/s    0:00:00 (xfr#12, to-chk=52/65)
+demo_log_5.txt
+            295 100%  288.09kB/s    0:00:00              295 100%  288.09kB/s    0:00:00 (xfr#13, to-chk=51/65)
+deploy_fix_log.txt
+          7,525 100%    7.18MB/s    0:00:00            7,525 100%    7.18MB/s    0:00:00 (xfr#14, to-chk=50/65)
+deploy_log.txt
+         15,625 100%   14.90MB/s    0:00:00           15,625 100%   14.90MB/s    0:00:00 (xfr#15, to-chk=49/65)
+deploy_log_2.txt
+          9,919 100%    9.46MB/s    0:00:00            9,919 100%    9.46MB/s    0:00:00 (xfr#16, to-chk=48/65)
+deploy_quicktest_log.txt
+          7,673 100%    3.66MB/s    0:00:00            7,673 100%    3.66MB/s    0:00:00 (xfr#17, to-chk=47/65)
+deploy_team22_log.txt
+         10,085 100%    4.81MB/s    0:00:00           10,085 100%    4.81MB/s    0:00:00 (xfr#18, to-chk=46/65)
+deploy_tzfix_log.txt
+          2,415 100%    1.15MB/s    0:00:00            2,415 100%    1.15MB/s    0:00:00 (xfr#19, to-chk=45/65)
+install_log.txt
+         14,311 100%    6.82MB/s    0:00:00           14,311 100%    6.82MB/s    0:00:00 (xfr#20, to-chk=44/65)
+interactive_log.txt
+            236 100%  115.23kB/s    0:00:00              236 100%  115.23kB/s    0:00:00 (xfr#21, to-chk=43/65)
+main.py
+          4,348 100%    2.07MB/s    0:00:00            4,348 100%    2.07MB/s    0:00:00 (xfr#22, to-chk=42/65)
+output.txt
+            281 100%  137.21kB/s    0:00:00              281 100%  137.21kB/s    0:00:00 (xfr#23, to-chk=41/65)
+pip_log.txt
+          5,014 100%    2.39MB/s    0:00:00            5,014 100%    2.39MB/s    0:00:00 (xfr#24, to-chk=40/65)
+pybullet_bin_log.txt
+            223 100%  108.89kB/s    0:00:00              223 100%  108.89kB/s    0:00:00 (xfr#25, to-chk=39/65)
+pybullet_log.txt
+         32,768  25%    2.23MB/s    0:00:00          129,509 100%    5.61MB/s    0:00:00 (xfr#26, to-chk=38/65)
+pygame_log.txt
+            219 100%    9.72kB/s    0:00:00              219 100%    9.72kB/s    0:00:00 (xfr#27, to-chk=37/65)
+requirements.txt
+            194 100%    8.61kB/s    0:00:00              194 100%    8.61kB/s    0:00:00 (xfr#28, to-chk=36/65)
+run_demo.sh
+            178 100%    7.90kB/s    0:00:00              178 100%    7.90kB/s    0:00:00 (xfr#29, to-chk=35/65)
+setup.sh
+            978 100%   39.79kB/s    0:00:00              978 100%   39.79kB/s    0:00:00 (xfr#30, to-chk=34/65)
+status_log.txt
+             92 100%    3.74kB/s    0:00:00               92 100%    3.74kB/s    0:00:00 (xfr#31, to-chk=33/65)
+test_log.txt
+            964 100%   39.23kB/s    0:00:00              964 100%   39.23kB/s    0:00:00 (xfr#32, to-chk=32/65)
+test_physics.py
+          1,311 100%   53.34kB/s    0:00:00            1,311 100%   53.34kB/s    0:00:00 (xfr#33, to-chk=31/65)
+test_random_1.txt
+            318 100%   12.42kB/s    0:00:00              318 100%   12.42kB/s    0:00:00 (xfr#34, to-chk=30/65)
+test_random_2.txt
+            315 100%   12.30kB/s    0:00:00              315 100%   12.30kB/s    0:00:00 (xfr#35, to-chk=29/65)
+test_result_final.txt
+            263 100%   10.27kB/s    0:00:00              263 100%   10.27kB/s    0:00:00 (xfr#36, to-chk=28/65)
+test_success.txt
+            263 100%   10.27kB/s    0:00:00              263 100%   10.27kB/s    0:00:00 (xfr#37, to-chk=27/65)
+train.py
+          1,205 100%   47.07kB/s    0:00:00            1,205 100%   47.07kB/s    0:00:00 (xfr#38, to-chk=26/65)
+train_hf.py
+          2,277 100%   88.95kB/s    0:00:00            2,277 100%   88.95kB/s    0:00:00 (xfr#39, to-chk=25/65)
+train_log_500k.txt
+         32,768  39%    1.25MB/s    0:00:00           83,713 100%    3.19MB/s    0:00:00 (xfr#40, to-chk=24/65)
+train_log_full.txt
+          3,044 100%  118.91kB/s    0:00:00            3,044 100%  118.91kB/s    0:00:00 (xfr#41, to-chk=23/65)
+train_log_retry.txt
+         14,709 100%  574.57kB/s    0:00:00           14,709 100%  574.57kB/s    0:00:00 (xfr#42, to-chk=22/65)
+demo/
+demo/__init__.py
+             39 100%    1.52kB/s    0:00:00               39 100%    1.52kB/s    0:00:00 (xfr#43, to-chk=15/65)
+demo/visualize_drone.py
+         16,089 100%  628.48kB/s    0:00:00           16,089 100%  628.48kB/s    0:00:00 (xfr#44, to-chk=14/65)
+env/
+env/__init__.py
+             62 100%    2.42kB/s    0:00:00               62 100%    2.42kB/s    0:00:00 (xfr#45, to-chk=13/65)
+env/drone_3d.py
+          5,304 100%  207.19kB/s    0:00:00            5,304 100%  207.19kB/s    0:00:00 (xfr#46, to-chk=12/65)
+env/drone_env.py
+         10,099 100%  394.49kB/s    0:00:00           10,099 100%  394.49kB/s    0:00:00 (xfr#47, to-chk=11/65)
+eval/
+eval/__init__.py
+             41 100%    1.60kB/s    0:00:00               41 100%    1.60kB/s    0:00:00 (xfr#48, to-chk=10/65)
+eval/eval_liquid_policy.py
+          5,742 100%  224.30kB/s    0:00:00            5,742 100%  224.30kB/s    0:00:00 (xfr#49, to-chk=9/65)
+eval/eval_mlp_baseline.py
+          5,570 100%  217.58kB/s    0:00:00            5,570 100%  217.58kB/s    0:00:00 (xfr#50, to-chk=8/65)
+models/
+models/__init__.py
+             44 100%    1.72kB/s    0:00:00               44 100%    1.72kB/s    0:00:00 (xfr#51, to-chk=7/65)
+models/liquid_cell.py
+          3,168 100%  123.75kB/s    0:00:00            3,168 100%  123.75kB/s    0:00:00 (xfr#52, to-chk=6/65)
+models/liquid_policy.py
+          2,690 100%   97.29kB/s    0:00:00            2,690 100%   97.29kB/s    0:00:00 (xfr#53, to-chk=5/65)
+models/liquid_ppo.py
+          4,141 100%  115.54kB/s    0:00:00            4,141 100%  115.54kB/s    0:00:00 (xfr#54, to-chk=4/65)
+train/
+train/__init__.py
+             39 100%    1.09kB/s    0:00:00               39 100%    1.09kB/s    0:00:00 (xfr#55, to-chk=3/65)
+train/train_liquid_ppo.py
+          6,619 100%  184.68kB/s    0:00:00            6,619 100%  184.68kB/s    0:00:00 (xfr#56, to-chk=2/65)
+train/train_mlp_ppo.py
+          4,442 100%  123.94kB/s    0:00:00            4,442 100%  123.94kB/s    0:00:00 (xfr#57, to-chk=1/65)
+utils/
+utils/__init__.py
+             38 100%    1.06kB/s    0:00:00               38 100%    1.06kB/s    0:00:00 (xfr#58, to-chk=0/65)
+
+sent 415,095 bytes  received 1,154 bytes  832,498.00 bytes/sec
+total size is 408,420  speedup is 0.98
+[main 3c62450] Deploy Neuro-Flyt 3D Training
+ 5 files changed, 161 insertions(+), 1 deletion(-)
+ create mode 100644 check_status.py
+ create mode 100644 deploy_tzfix_log.txt
+ create mode 100644 status_log.txt
+remote: [31m-------------------------------------------------------------------------[0m        
+remote: [31mIt appears that one or more of your files contain valid Hugging Face secrets, such as tokens or API keys.[0m        
+remote: [31mIt is important to keep your secrets private and not expose them in code that is publicly accessible.[0m        
+remote: [31mRead more: https://huggingface.co/docs/hub/spaces-overview#managing-secrets[0m        
+remote: [31m[0m        
+remote: [31mOffending files:[0m        
+remote: [31m  - check_status.py (ref: refs/heads/main, token: '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')[0m        
+remote: [31m-------------------------------------------------------------------------[0m        
+To https://huggingface.co/spaces/iteratehack/team_22
+ ! [remote rejected] main -> main (pre-receive hook declined)
+error: failed to push some refs to 'https://huggingface.co/spaces/iteratehack/team_22'

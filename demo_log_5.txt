@@ -1,0 +1,9 @@
+Initializing Project Neuro-Flyt 3D Demo (Matplotlib Mode)...
+No trained model found. Using untrained Liquid Brain.
+Using cpu device
+Wrapping the env with a `Monitor` wrapper
+Wrapping the env in a DummyVecEnv.
+
+=== DEMO STARTING ===
+Generating Animation (demo.gif)...
+Animation saved to demo.gif

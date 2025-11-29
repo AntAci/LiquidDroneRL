@@ -8,3 +8,6 @@ tensorboard>=2.14.0
 tqdm>=4.65.0
 rich>=13.0.0
 
+PyFlyt>=0.3.0
+opensimplex>=0.4.4
+ncps>=0.0.7

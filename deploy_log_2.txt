@@ -1,0 +1,183 @@
+Cloning Space...
+Cloning into 'hf_deploy'...
+Copying files...
+sending incremental file list
+.gitignore
+            536 100%    0.00kB/s    0:00:00              536 100%    0.00kB/s    0:00:00 (xfr#1, to-chk=57/59)
+Dockerfile
+            622 100%  607.42kB/s    0:00:00              622 100%  607.42kB/s    0:00:00 (xfr#2, to-chk=56/59)
+README.md
+            924 100%  902.34kB/s    0:00:00              924 100%  902.34kB/s    0:00:00 (xfr#3, to-chk=55/59)
+README_HF.md
+          3,598 100%    3.43MB/s    0:00:00            3,598 100%    3.43MB/s    0:00:00 (xfr#4, to-chk=54/59)
+debug_imports.py
+            620 100%  605.47kB/s    0:00:00              620 100%  605.47kB/s    0:00:00 (xfr#5, to-chk=53/59)
+demo_3d.py
+          2,198 100%    2.10MB/s    0:00:00            2,198 100%    2.10MB/s    0:00:00 (xfr#6, to-chk=52/59)
+demo_interactive.py
+          4,050 100%    3.86MB/s    0:00:00            4,050 100%    3.86MB/s    0:00:00 (xfr#7, to-chk=51/59)
+demo_log.txt
+          2,580 100%    2.46MB/s    0:00:00            2,580 100%    2.46MB/s    0:00:00 (xfr#8, to-chk=50/59)
+demo_log_2.txt
+          2,652 100%    2.53MB/s    0:00:00            2,652 100%    2.53MB/s    0:00:00 (xfr#9, to-chk=49/59)
+demo_log_3.txt
+          5,276 100%    5.03MB/s    0:00:00            5,276 100%    5.03MB/s    0:00:00 (xfr#10, to-chk=48/59)
+demo_log_4.txt
+          5,276 100%    5.03MB/s    0:00:00            5,276 100%    5.03MB/s    0:00:00 (xfr#11, to-chk=47/59)
+demo_log_5.txt
+            295 100%  288.09kB/s    0:00:00              295 100%  288.09kB/s    0:00:00 (xfr#12, to-chk=46/59)
+deploy_log.txt
+         15,625 100%   14.90MB/s    0:00:00           15,625 100%   14.90MB/s    0:00:00 (xfr#13, to-chk=45/59)
+deploy_log_2.txt
+          1,746 100%    1.67MB/s    0:00:00            1,746 100%    1.67MB/s    0:00:00 (xfr#14, to-chk=44/59)
+install_log.txt
+         14,311 100%   13.65MB/s    0:00:00           14,311 100%   13.65MB/s    0:00:00 (xfr#15, to-chk=43/59)
+interactive_log.txt
+            236 100%  230.47kB/s    0:00:00              236 100%  230.47kB/s    0:00:00 (xfr#16, to-chk=42/59)
+main.py
+          4,348 100%    4.15MB/s    0:00:00            4,348 100%    4.15MB/s    0:00:00 (xfr#17, to-chk=41/59)
+output.txt
+            281 100%  274.41kB/s    0:00:00              281 100%  274.41kB/s    0:00:00 (xfr#18, to-chk=40/59)
+pip_log.txt
+          5,014 100%    4.78MB/s    0:00:00            5,014 100%    4.78MB/s    0:00:00 (xfr#19, to-chk=39/59)
+pybullet_bin_log.txt
+            223 100%  217.77kB/s    0:00:00              223 100%  217.77kB/s    0:00:00 (xfr#20, to-chk=38/59)
+pybullet_log.txt
+         32,768  25%   31.25MB/s    0:00:00          129,509 100%  123.51MB/s    0:00:00 (xfr#21, to-chk=37/59)
+pygame_log.txt
+            219 100%  213.87kB/s    0:00:00              219 100%  213.87kB/s    0:00:00 (xfr#22, to-chk=36/59)
+requirements.txt
+            194 100%  189.45kB/s    0:00:00              194 100%  189.45kB/s    0:00:00 (xfr#23, to-chk=35/59)
+run_demo.sh
+            178 100%  173.83kB/s    0:00:00              178 100%  173.83kB/s    0:00:00 (xfr#24, to-chk=34/59)
+setup.sh
+            978 100%  955.08kB/s    0:00:00              978 100%  955.08kB/s    0:00:00 (xfr#25, to-chk=33/59)
+test_log.txt
+            964 100%  941.41kB/s    0:00:00              964 100%  941.41kB/s    0:00:00 (xfr#26, to-chk=32/59)
+test_physics.py
+          1,311 100%    1.25MB/s    0:00:00            1,311 100%    1.25MB/s    0:00:00 (xfr#27, to-chk=31/59)
+test_random_1.txt
+            318 100%  310.55kB/s    0:00:00              318 100%  310.55kB/s    0:00:00 (xfr#28, to-chk=30/59)
+test_random_2.txt
+            315 100%  307.62kB/s    0:00:00              315 100%  307.62kB/s    0:00:00 (xfr#29, to-chk=29/59)
+test_result_final.txt
+            263 100%  256.84kB/s    0:00:00              263 100%  256.84kB/s    0:00:00 (xfr#30, to-chk=28/59)
+test_success.txt
+            263 100%  128.42kB/s    0:00:00              263 100%  128.42kB/s    0:00:00 (xfr#31, to-chk=27/59)
+train.py
+          1,205 100%  588.38kB/s    0:00:00            1,205 100%  588.38kB/s    0:00:00 (xfr#32, to-chk=26/59)
+train_hf.py
+          2,277 100%    1.09MB/s    0:00:00            2,277 100%    1.09MB/s    0:00:00 (xfr#33, to-chk=25/59)
+train_log_500k.txt
+         32,768  39%   15.62MB/s    0:00:00           83,713 100%   39.92MB/s    0:00:00 (xfr#34, to-chk=24/59)
+train_log_full.txt
+          3,044 100%    1.45MB/s    0:00:00            3,044 100%    1.45MB/s    0:00:00 (xfr#35, to-chk=23/59)
+train_log_retry.txt
+         14,709 100%    7.01MB/s    0:00:00           14,709 100%    7.01MB/s    0:00:00 (xfr#36, to-chk=22/59)
+demo/
+demo/__init__.py
+             39 100%   19.04kB/s    0:00:00               39 100%   19.04kB/s    0:00:00 (xfr#37, to-chk=15/59)
+demo/visualize_drone.py
+         16,089 100%    7.67MB/s    0:00:00           16,089 100%    7.67MB/s    0:00:00 (xfr#38, to-chk=14/59)
+env/
+env/__init__.py
+             62 100%   30.27kB/s    0:00:00               62 100%   30.27kB/s    0:00:00 (xfr#39, to-chk=13/59)
+env/drone_3d.py
+          5,304 100%    2.53MB/s    0:00:00            5,304 100%    2.53MB/s    0:00:00 (xfr#40, to-chk=12/59)
+env/drone_env.py
+         10,099 100%    4.82MB/s    0:00:00           10,099 100%    4.82MB/s    0:00:00 (xfr#41, to-chk=11/59)
+eval/
+eval/__init__.py
+             41 100%   20.02kB/s    0:00:00               41 100%   20.02kB/s    0:00:00 (xfr#42, to-chk=10/59)
+eval/eval_liquid_policy.py
+          5,742 100%    2.74MB/s    0:00:00            5,742 100%    2.74MB/s    0:00:00 (xfr#43, to-chk=9/59)
+eval/eval_mlp_baseline.py
+          5,570 100%    2.66MB/s    0:00:00            5,570 100%    2.66MB/s    0:00:00 (xfr#44, to-chk=8/59)
+models/
+models/__init__.py
+             44 100%   21.48kB/s    0:00:00               44 100%   21.48kB/s    0:00:00 (xfr#45, to-chk=7/59)
+models/liquid_cell.py
+          3,168 100%    1.51MB/s    0:00:00            3,168 100%    1.51MB/s    0:00:00 (xfr#46, to-chk=6/59)
+models/liquid_policy.py
+          2,690 100%    1.28MB/s    0:00:00            2,690 100%    1.28MB/s    0:00:00 (xfr#47, to-chk=5/59)
+models/liquid_ppo.py
+          4,141 100%    1.32MB/s    0:00:00            4,141 100%    1.32MB/s    0:00:00 (xfr#48, to-chk=4/59)
+train/
+train/__init__.py
+             39 100%   12.70kB/s    0:00:00               39 100%   12.70kB/s    0:00:00 (xfr#49, to-chk=3/59)
+train/train_liquid_ppo.py
+          6,619 100%    2.10MB/s    0:00:00            6,619 100%    2.10MB/s    0:00:00 (xfr#50, to-chk=2/59)
+train/train_mlp_ppo.py
+          4,442 100%    1.41MB/s    0:00:00            4,442 100%    1.41MB/s    0:00:00 (xfr#51, to-chk=1/59)
+utils/
+utils/__init__.py
+             38 100%   12.37kB/s    0:00:00               38 100%   12.37kB/s    0:00:00 (xfr#52, to-chk=0/59)
+
+sent 377,911 bytes  received 1,040 bytes  757,902.00 bytes/sec
+total size is 372,344  speedup is 0.98
+[main ae22fc1] Deploy Neuro-Flyt 3D Training
+ 52 files changed, 9501 insertions(+), 10 deletions(-)
+ create mode 100644 .gitignore
+ create mode 100644 Dockerfile
+ create mode 100644 README_HF.md
+ create mode 100644 debug_imports.py
+ create mode 100644 demo/__init__.py
+ create mode 100644 demo/visualize_drone.py
+ create mode 100644 demo_3d.py
+ create mode 100644 demo_interactive.py
+ create mode 100644 demo_log.txt
+ create mode 100644 demo_log_2.txt
+ create mode 100644 demo_log_3.txt
+ create mode 100644 demo_log_4.txt
+ create mode 100644 demo_log_5.txt
+ create mode 100644 deploy_log.txt
+ create mode 100644 deploy_log_2.txt
+ create mode 100644 env/__init__.py
+ create mode 100644 env/drone_3d.py
+ create mode 100644 env/drone_env.py
+ create mode 100644 eval/__init__.py
+ create mode 100644 eval/eval_liquid_policy.py
+ create mode 100644 eval/eval_mlp_baseline.py
+ create mode 100644 install_log.txt
+ create mode 100644 interactive_log.txt
+ create mode 100644 main.py
+ create mode 100644 models/__init__.py
+ create mode 100644 models/liquid_cell.py
+ create mode 100644 models/liquid_policy.py
+ create mode 100644 models/liquid_ppo.py
+ create mode 100644 output.txt
+ create mode 100644 pip_log.txt
+ create mode 100644 pybullet_bin_log.txt
+ create mode 100644 pybullet_log.txt
+ create mode 100644 pygame_log.txt
+ create mode 100644 requirements.txt
+ create mode 100755 run_demo.sh
+ create mode 100755 setup.sh
+ create mode 100644 test_log.txt
+ create mode 100644 test_physics.py
+ create mode 100644 test_random_1.txt
+ create mode 100644 test_random_2.txt
+ create mode 100644 test_result_final.txt
+ create mode 100644 test_success.txt
+ create mode 100644 train.py
+ create mode 100644 train/__init__.py
+ create mode 100644 train/train_liquid_ppo.py
+ create mode 100644 train/train_mlp_ppo.py
+ create mode 100644 train_hf.py
+ create mode 100644 train_log_500k.txt
+ create mode 100644 train_log_full.txt
+ create mode 100644 train_log_retry.txt
+ create mode 100644 utils/__init__.py
+remote: [33m-------------------------------------------------------------------------[0m        
+remote: [33mYour push was accepted, but with warnings: [0m        
+remote: [33m- Warning: empty or missing yaml metadata in repo card[0m        
+remote: [33mhelp: https://huggingface.co/docs/hub/spaces-config-reference[0m        
+remote: [33m-------------------------------------------------------------------------[0m        
+remote: [32m-------------------------------------------------------------------------[0m        
+remote: [32mPlease find the documentation at:[0m        
+remote: [32mhttps://huggingface.co/docs/hub/model-cards#model-card-metadata[0m        
+remote: [32m[0m        
+remote: [32m-------------------------------------------------------------------------[0m        
+To https://huggingface.co/spaces/iteratehack/neuro-flyt-training
+   c98f107..ae22fc1  main -> main
+Deployment Complete!

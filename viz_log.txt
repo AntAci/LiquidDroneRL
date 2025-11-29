@@ -1,0 +1,33 @@
+Loading model from: liquid_ppo_drone_final.zip
+Traceback (most recent call last):
+  File "/home/ylop/.local/lib/python3.14/site-packages/stable_baselines3/common/save_util.py", line 410, in load_from_zip_file
+    with zipfile.ZipFile(file) as archive:
+         ~~~~~~~~~~~~~~~^^^^^^
+  File "/usr/lib64/python3.14/zipfile/__init__.py", line 1458, in __init__
+    self._RealGetContents()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib64/python3.14/zipfile/__init__.py", line 1525, in _RealGetContents
+    raise BadZipFile("File is not a zip file")
+zipfile.BadZipFile: File is not a zip file
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/ylop/Documents/drone go brr/Drone-go-brrrrr/Drone-go-brrrrr/visualize_agent.py", line 84, in <module>
+    run_visualization(path)
+    ~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/ylop/Documents/drone go brr/Drone-go-brrrrr/Drone-go-brrrrr/visualize_agent.py", line 24, in run_visualization
+    model = PPO.load(model_path, env=env, device='cpu')
+  File "/home/ylop/.local/lib/python3.14/site-packages/stable_baselines3/common/base_class.py", line 681, in load
+    data, params, pytorch_variables = load_from_zip_file(
+                                      ~~~~~~~~~~~~~~~~~~^
+        path,
+        ^^^^^
+    ...<2 lines>...
+        print_system_info=print_system_info,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/ylop/.local/lib/python3.14/site-packages/stable_baselines3/common/save_util.py", line 462, in load_from_zip_file
+    raise ValueError(f"Error: the file {load_path} wasn't a zip-file") from e
+ValueError: Error: the file liquid_ppo_drone_final.zip wasn't a zip-file

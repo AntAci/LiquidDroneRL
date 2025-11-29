@@ -1,0 +1,3 @@
+Stage: BUILDING
+Hardware: None
+Status: Space is still BUILDING (installing dependencies)...

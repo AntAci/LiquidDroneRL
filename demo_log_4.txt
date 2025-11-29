@@ -1,0 +1,87 @@
+Initializing Project Neuro-Flyt 3D Demo (Matplotlib Mode)...
+No trained model found. Using untrained Liquid Brain.
+Using cpu device
+Wrapping the env with a `Monitor` wrapper
+Wrapping the env in a DummyVecEnv.
+
+=== DEMO STARTING ===
+Generating Animation (demo.gif)...
+Traceback (most recent call last):
+  File "/home/ylop/.local/lib/python3.14/site-packages/matplotlib/animation.py", line 224, in saving
+    yield self
+  File "/home/ylop/.local/lib/python3.14/site-packages/matplotlib/animation.py", line 1109, in save
+    anim._init_draw()  # Clear the initial frame
+    ~~~~~~~~~~~~~~~^^
+  File "/home/ylop/.local/lib/python3.14/site-packages/matplotlib/animation.py", line 1770, in _init_draw
+    self._draw_frame(frame_data)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/home/ylop/.local/lib/python3.14/site-packages/matplotlib/animation.py", line 1789, in _draw_frame
+    self._drawn_artists = self._func(framedata, *self._args)
+                          ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ylop/Documents/drone go brr/Drone-go-brrrrr/Drone-go-brrrrr/demo_3d.py", line 35, in update
+    action, _ = model.predict(obs, deterministic=True)
+                ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ylop/.local/lib/python3.14/site-packages/stable_baselines3/common/base_class.py", line 557, in predict
+    return self.policy.predict(observation, state, episode_start, deterministic)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ylop/.local/lib/python3.14/site-packages/stable_baselines3/common/policies.py", line 368, in predict
+    actions = self._predict(obs_tensor, deterministic=deterministic)
+  File "/home/ylop/.local/lib/python3.14/site-packages/stable_baselines3/common/policies.py", line 717, in _predict
+    return self.get_distribution(observation).get_actions(deterministic=deterministic)
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/ylop/.local/lib/python3.14/site-packages/stable_baselines3/common/policies.py", line 750, in get_distribution
+    features = super().extract_features(obs, self.pi_features_extractor)
+  File "/home/ylop/.local/lib/python3.14/site-packages/stable_baselines3/common/policies.py", line 131, in extract_features
+    return features_extractor(preprocessed_obs)
+  File "/home/ylop/.local/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ylop/.local/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/ylop/Documents/drone go brr/Drone-go-brrrrr/Drone-go-brrrrr/models/liquid_ppo.py", line 54, in forward
+    output, self.hx = self.ltc(observations, self.hx)
+                      ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ylop/.local/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/ylop/.local/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/ylop/.local/lib/python3.14/site-packages/ncps/torch/ltc.py", line 185, in forward
+    h_out, h_state = self.rnn_cell.forward(inputs, h_state, ts)
+                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ylop/.local/lib/python3.14/site-packages/ncps/torch/ltc_cell.py", line 282, in forward
+    next_state = self._ode_solver(inputs, states, elapsed_time)
+  File "/home/ylop/.local/lib/python3.14/site-packages/ncps/torch/ltc_cell.py", line 230, in _ode_solver
+    w_activation = w_param * self._sigmoid(
+                             ~~~~~~~~~~~~~^
+        v_pre, self._params["mu"], self._params["sigma"]
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/ylop/.local/lib/python3.14/site-packages/ncps/torch/ltc_cell.py", line 199, in _sigmoid
+    mues = v_pre - mu
+           ~~~~~~^~~~
+RuntimeError: The size of tensor a (32) must match the size of tensor b (48) at non-singleton dimension 1
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ylop/Documents/drone go brr/Drone-go-brrrrr/Drone-go-brrrrr/demo_3d.py", line 72, in <module>
+    run_demo()
+    ~~~~~~~~^^
+  File "/home/ylop/Documents/drone go brr/Drone-go-brrrrr/Drone-go-brrrrr/demo_3d.py", line 66, in run_demo
+    anim.save('demo.gif', writer='pillow', fps=20)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ylop/.local/lib/python3.14/site-packages/matplotlib/animation.py", line 1098, in save
+    with (writer.saving(self._fig, filename, dpi),
+          ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/ylop/.local/lib/python3.14/site-packages/matplotlib/animation.py", line 226, in saving
+    self.finish()
+    ~~~~~~~~~~~^^
+  File "/home/ylop/.local/lib/python3.14/site-packages/matplotlib/animation.py", line 506, in finish
+    self._frames[0].save(
+    ~~~~~~~~~~~~^^^
+IndexError: list index out of range

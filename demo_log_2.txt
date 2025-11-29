@@ -1,0 +1,43 @@
+Initializing Project Neuro-Flyt 3D Demo (Matplotlib Mode)...
+No trained model found. Using untrained Liquid Brain.
+Using cpu device
+Wrapping the env with a `Monitor` wrapper
+Wrapping the env in a DummyVecEnv.
+Traceback (most recent call last):
+  File "/home/ylop/Documents/drone go brr/Drone-go-brrrrr/Drone-go-brrrrr/demo_3d.py", line 72, in <module>
+    run_demo()
+    ~~~~~~~~^^
+  File "/home/ylop/Documents/drone go brr/Drone-go-brrrrr/Drone-go-brrrrr/demo_3d.py", line 21, in run_demo
+    model = make_liquid_ppo(env, verbose=1)
+  File "/home/ylop/Documents/drone go brr/Drone-go-brrrrr/Drone-go-brrrrr/models/liquid_ppo.py", line 67, in make_liquid_ppo
+    model = PPO(
+        "MlpPolicy",
+    ...<9 lines>...
+        clip_range=0.2,
+    )
+  File "/home/ylop/.local/lib/python3.14/site-packages/stable_baselines3/ppo/ppo.py", line 171, in __init__
+    self._setup_model()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/home/ylop/.local/lib/python3.14/site-packages/stable_baselines3/ppo/ppo.py", line 174, in _setup_model
+    super()._setup_model()
+    ~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/ylop/.local/lib/python3.14/site-packages/stable_baselines3/common/on_policy_algorithm.py", line 135, in _setup_model
+    self.policy = self.policy_class(  # type: ignore[assignment]
+                  ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.observation_space, self.action_space, self.lr_schedule, use_sde=self.use_sde, **self.policy_kwargs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/ylop/.local/lib/python3.14/site-packages/stable_baselines3/common/policies.py", line 507, in __init__
+    self.features_extractor = self.make_features_extractor()
+                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/ylop/.local/lib/python3.14/site-packages/stable_baselines3/common/policies.py", line 120, in make_features_extractor
+    return self.features_extractor_class(self.observation_space, **self.features_extractor_kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ylop/Documents/drone go brr/Drone-go-brrrrr/Drone-go-brrrrr/models/liquid_ppo.py", line 22, in __init__
+    wiring = AutoNCP(features_dim, output_size=features_dim)
+  File "/home/ylop/.local/lib/python3.14/site-packages/ncps/wirings/wirings.py", line 622, in __init__
+    raise ValueError(
+        f"Output size must be less than the number of units-2 (given {units} units, {output_size} output size)"
+    )
+ValueError: Output size must be less than the number of units-2 (given 32 units, 32 output size)
