@@ -22,9 +22,9 @@ wheels/
 
 # Virtual Environment
 venv/
-env/
 ENV/
 .venv
+# Note: env/ is our project folder, not a virtual environment
 
 # IDE
 .vscode/
