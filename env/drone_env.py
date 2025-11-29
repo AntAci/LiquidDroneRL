@@ -26,6 +26,9 @@ GRAVITY = -1.8  # Constant vertical acceleration (downwards), world units / s^2
 TARGET_REWARD = 4.0  # Bonus reward for being in target zone (increased to incentivize staying)
 TARGET_SPAWN_DELAY = 50  # Steps before target zone appears (after wind starts)
 BOUNDARY_CRASH_PENALTY = -20.0  # Large penalty for hitting boundary
+TARGET_MOVE_SPEED = 0.015  # Target movement speed per step (world units)
+TARGET_VELOCITY_UPDATE_INTERVAL = 100  # Steps between sampling new target velocity direction
+TARGET_BOUNCE_ON_BOUNDARIES = True  # If True, target bounces off walls; if False, wraps around
 
 # Stabilization and shaping
 DRAG_COEFF = 0.45  # Linear velocity drag coefficient (increased damping)
@@ -84,6 +87,11 @@ class DroneWindEnv(gym.Env):
         self.ay_applied: float = 0.0
         # Track previous distance to target center for potential shaping
         self.prev_distance_to_target: Optional[float] = None
+        # Target movement state
+        self.target_vx: float = 0.0  # Target velocity in x direction
+        self.target_vy: float = 0.0  # Target velocity in y direction
+        self.target_velocity_target_x: float = 0.0  # Target velocity direction (x)
+        self.target_velocity_target_y: float = 0.0  # Target velocity direction (y)
         
     def reset(
         self, 
@@ -135,6 +143,12 @@ class DroneWindEnv(gym.Env):
         self.target_y_min = float(self.np_random.uniform(y_min_low, y_min_high))
         self.target_x_max = self.target_x_min + box_w
         self.target_y_max = self.target_y_min + box_h
+        # Initialize target movement (random initial velocity direction)
+        angle = self.np_random.uniform(0, 2 * np.pi)
+        self.target_vx = TARGET_MOVE_SPEED * np.cos(angle)
+        self.target_vy = TARGET_MOVE_SPEED * np.sin(angle)
+        self.target_velocity_target_x = self.target_vx
+        self.target_velocity_target_y = self.target_vy
         # Initialize previous distance to target center (after target is defined)
         tx_c = (self.target_x_min + self.target_x_max) * 0.5
         ty_c = (self.target_y_min + self.target_y_max) * 0.5
@@ -168,14 +182,18 @@ class DroneWindEnv(gym.Env):
         # Update wind model
         self._update_wind()
         
+        # Check if target has spawned
+        target_spawned = self.step_count >= TARGET_SPAWN_DELAY
+        
+        # Update target position (move the target zone) if spawned
+        if target_spawned:
+            self._update_target_position()
+        
         # Apply physics update
         self._apply_physics(action)
         
         # Compute reward
         base_reward = BASE_STEP_COST  # Small time penalty
-        
-        # Check if drone is in target zone (only if target has spawned)
-        target_spawned = self.step_count >= TARGET_SPAWN_DELAY
         in_target = (
             target_spawned
             and self.target_x_min <= self.x <= self.target_x_max
@@ -282,6 +300,75 @@ class DroneWindEnv(gym.Env):
         # Clamp wind to bounds
         self.wind_x = np.clip(self.wind_x, -WIND_MAX, WIND_MAX)
         self.wind_y = np.clip(self.wind_y, -WIND_MAX, WIND_MAX)
+    
+    def _update_target_position(self) -> None:
+        """Update target zone position by moving it smoothly, changing direction periodically."""
+        # Resample target velocity direction periodically
+        if self.step_count % TARGET_VELOCITY_UPDATE_INTERVAL == 0:
+            # Sample new random direction
+            angle = self.np_random.uniform(0, 2 * np.pi)
+            self.target_velocity_target_x = TARGET_MOVE_SPEED * np.cos(angle)
+            self.target_velocity_target_y = TARGET_MOVE_SPEED * np.sin(angle)
+        
+        # Smoothly interpolate target velocity toward target direction (similar to wind)
+        self.target_vx += WIND_SMOOTHING * (self.target_velocity_target_x - self.target_vx)
+        self.target_vy += WIND_SMOOTHING * (self.target_velocity_target_y - self.target_vy)
+        
+        # Clamp target velocity magnitude
+        speed = np.sqrt(self.target_vx**2 + self.target_vy**2)
+        if speed > TARGET_MOVE_SPEED * 1.5:  # Allow some overshoot
+            self.target_vx = (self.target_vx / speed) * TARGET_MOVE_SPEED * 1.5
+            self.target_vy = (self.target_vy / speed) * TARGET_MOVE_SPEED * 1.5
+        
+        # Calculate target box dimensions
+        world_size = POSITION_MAX - POSITION_MIN
+        box_w = TARGET_BOX_WIDTH_FRAC * world_size
+        box_h = TARGET_BOX_HEIGHT_FRAC * world_size
+        margin = 0.05 * world_size
+        
+        # Move target box
+        new_x_min = self.target_x_min + self.target_vx
+        new_y_min = self.target_y_min + self.target_vy
+        new_x_max = new_x_min + box_w
+        new_y_max = new_y_min + box_h
+        
+        # Handle boundary collisions
+        if TARGET_BOUNCE_ON_BOUNDARIES:
+            # Bounce off boundaries
+            if new_x_min < POSITION_MIN + margin:
+                new_x_min = POSITION_MIN + margin
+                self.target_vx = -self.target_vx
+                self.target_velocity_target_x = -self.target_velocity_target_x
+            elif new_x_max > POSITION_MAX - margin:
+                new_x_min = POSITION_MAX - margin - box_w
+                self.target_vx = -self.target_vx
+                self.target_velocity_target_x = -self.target_velocity_target_x
+            
+            if new_y_min < POSITION_MIN + margin:
+                new_y_min = POSITION_MIN + margin
+                self.target_vy = -self.target_vy
+                self.target_velocity_target_y = -self.target_velocity_target_y
+            elif new_y_max > POSITION_MAX - margin:
+                new_y_min = POSITION_MAX - margin - box_h
+                self.target_vy = -self.target_vy
+                self.target_velocity_target_y = -self.target_velocity_target_y
+        else:
+            # Wrap around boundaries
+            if new_x_min < POSITION_MIN + margin:
+                new_x_min = POSITION_MAX - margin - box_w
+            elif new_x_max > POSITION_MAX - margin:
+                new_x_min = POSITION_MIN + margin
+            
+            if new_y_min < POSITION_MIN + margin:
+                new_y_min = POSITION_MAX - margin - box_h
+            elif new_y_max > POSITION_MAX - margin:
+                new_y_min = POSITION_MIN + margin
+        
+        # Update target box position
+        self.target_x_min = new_x_min
+        self.target_y_min = new_y_min
+        self.target_x_max = new_x_min + box_w
+        self.target_y_max = new_y_min + box_h
     
     def _apply_physics(self, action: np.ndarray) -> None:
         """Apply physics update: convert action to thrust, update velocity and position."""
