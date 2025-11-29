@@ -59,13 +59,16 @@ class DroneWindEnv(gym.Env):
     
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
     
-    def __init__(self):
+    def __init__(self, difficulty: int = 2):
         super().__init__()
+        # Difficulty controls wind strength and noise (0..4)
+        self.difficulty: int = int(difficulty)
+        self._configure_difficulty()
         
         # Observation space: [x, y, vx, vy, wind_x, wind_y, dx_to_target, dy_to_target]
         self.observation_space = spaces.Box(
-            low=np.array([POSITION_MIN, POSITION_MIN, -MAX_VEL, -MAX_VEL, -WIND_MAX, -WIND_MAX, -1.0, -1.0], dtype=np.float32),
-            high=np.array([POSITION_MAX, POSITION_MAX, MAX_VEL, MAX_VEL, WIND_MAX, WIND_MAX, 1.0, 1.0], dtype=np.float32),
+            low=np.array([POSITION_MIN, POSITION_MIN, -MAX_VEL, -MAX_VEL, -self.wind_max, -self.wind_max, -1.0, -1.0], dtype=np.float32),
+            high=np.array([POSITION_MAX, POSITION_MAX, MAX_VEL, MAX_VEL, self.wind_max, self.wind_max, 1.0, 1.0], dtype=np.float32),
             dtype=np.float32
         )
         
@@ -290,16 +293,27 @@ class DroneWindEnv(gym.Env):
         """Update wind by smoothly moving toward target, resampling target periodically."""
         # Resample wind target every WIND_TARGET_INTERVAL steps
         if self.step_count % WIND_TARGET_INTERVAL == 0:
-            self.wind_target_x = self.np_random.uniform(-WIND_MAX, WIND_MAX)
-            self.wind_target_y = self.np_random.uniform(-WIND_MAX, WIND_MAX)
+            self.wind_target_x = self.np_random.uniform(-self.wind_max, self.wind_max)
+            self.wind_target_y = self.np_random.uniform(-self.wind_max, self.wind_max)
         
         # Smoothly interpolate wind toward target
         self.wind_x += WIND_SMOOTHING * (self.wind_target_x - self.wind_x)
         self.wind_y += WIND_SMOOTHING * (self.wind_target_y - self.wind_y)
         
+        # Add turbulence for higher difficulty (random small perturbations)
+        if self.difficulty >= 3 and self.turbulence_std > 0.0:
+            self.wind_x += self.np_random.normal(loc=0.0, scale=self.turbulence_std)
+            self.wind_y += self.np_random.normal(loc=0.0, scale=self.turbulence_std)
+        
+        # Add occasional gusts for the highest difficulty
+        if self.difficulty >= 4 and self.np_random.random() < self.gust_prob:
+            amp = float(self.gust_amp_mult * self.wind_max)
+            self.wind_x += self.np_random.uniform(-amp, amp)
+            self.wind_y += self.np_random.uniform(-amp, amp)
+        
         # Clamp wind to bounds
-        self.wind_x = np.clip(self.wind_x, -WIND_MAX, WIND_MAX)
-        self.wind_y = np.clip(self.wind_y, -WIND_MAX, WIND_MAX)
+        self.wind_x = np.clip(self.wind_x, -self.wind_max, self.wind_max)
+        self.wind_y = np.clip(self.wind_y, -self.wind_max, self.wind_max)
     
     def _update_target_position(self) -> None:
         """Update target zone position by moving it smoothly, changing direction periodically."""
@@ -430,6 +444,45 @@ class DroneWindEnv(gym.Env):
             [self.x, self.y, self.vx, self.vy, self.wind_x, self.wind_y, dx, dy],
             dtype=np.float32
         )
+    
+    def _configure_difficulty(self) -> None:
+        """
+        Configure wind bounds and stochasticity based on difficulty level.
+        
+        Difficulty mapping (wind_max):
+            0 -> 0.0 (no wind)
+            1 -> 0.5 (mild)
+            2 -> 1.0 (medium)
+            3 -> 2.0 (chaotic + turbulence)
+            4 -> 2.5 (chaotic + stronger turbulence + gusts)
+            5 -> 3.0 (test-only: very strong wind + heavier turbulence + frequent strong gusts)
+        """
+        level_to_wind_max = {
+            0: 0.0,
+            1: 0.5,
+            2: 1.0,
+            3: 2.0,
+            4: 2.5,
+            5: 3.0,
+        }
+        self.wind_max: float = float(level_to_wind_max.get(self.difficulty, 1.0))
+        # Turbulence amplitude (std dev) as a fraction of wind_max per step
+        if self.difficulty >= 5:
+            self.turbulence_std: float = 0.08 * self.wind_max
+            self.gust_prob: float = 0.02
+            self.gust_amp_mult: float = 2.5
+        elif self.difficulty >= 4:
+            self.turbulence_std = 0.06 * self.wind_max
+            self.gust_prob = 0.01
+            self.gust_amp_mult = 2.0
+        elif self.difficulty >= 3:
+            self.turbulence_std = 0.04 * self.wind_max
+            self.gust_prob = 0.0
+            self.gust_amp_mult = 2.0
+        else:
+            self.turbulence_std = 0.0
+            self.gust_prob = 0.0
+            self.gust_amp_mult = 2.0
     
     def render(self) -> None:
         """

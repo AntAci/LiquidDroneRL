@@ -12,8 +12,9 @@ import sys
 import argparse
 from typing import Optional
 import gymnasium as gym
+import numpy as np
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 from stable_baselines3.common.monitor import Monitor
 
 # Add project root to path
@@ -22,36 +23,58 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from env.drone_env import DroneWindEnv
 
 
-def make_env(seed: Optional[int] = None) -> gym.Env:
+class RandomDifficultyWrapper(gym.Wrapper):
+    """Wrap an env to randomize difficulty at every reset."""
+    def __init__(self, env: gym.Env, difficulties: Optional[list[int]] = None):
+        super().__init__(env)
+        self.difficulties = difficulties or [0, 1, 2, 3, 4]
+    
+    def reset(self, **kwargs):
+        d = int(np.random.choice(self.difficulties))
+        if hasattr(self.env, "difficulty"):
+            self.env.difficulty = d
+            if hasattr(self.env, "_configure_difficulty"):
+                self.env._configure_difficulty()
+        return self.env.reset(**kwargs)
+
+
+def make_env(seed: Optional[int] = None, random_difficulty: bool = False, difficulties: Optional[list[int]] = None) -> gym.Env:
     """
     Create and wrap a DroneWindEnv instance with Monitor.
     
     Args:
         seed: Optional random seed for the environment
+        random_difficulty: If True, resample difficulty on each reset
+        difficulties: Difficulty levels to sample from
         
     Returns:
         Wrapped Gymnasium environment
     """
-    env = DroneWindEnv()
+    base_difficulty = 4 if random_difficulty else 2
+    env = DroneWindEnv(difficulty=base_difficulty)
+    if random_difficulty:
+        env = RandomDifficultyWrapper(env, difficulties=difficulties)
     env = Monitor(env)
     if seed is not None:
         env.reset(seed=seed)
     return env
 
 
-def make_vec_env(num_envs: int = 4) -> DummyVecEnv:
+def make_vec_env(num_envs: int = 4, random_difficulty: bool = False, difficulties: Optional[list[int]] = None) -> DummyVecEnv:
     """
     Create a vectorized environment with multiple parallel instances.
     
     Args:
         num_envs: Number of parallel environments
+        random_difficulty: Whether to randomize difficulty per reset
+        difficulties: Difficulty levels to sample from
         
     Returns:
         Vectorized environment
     """
     def make_vec_env_fn(seed: Optional[int] = None):
         def _init():
-            return make_env(seed)
+            return make_env(seed, random_difficulty=random_difficulty, difficulties=difficulties)
         return _init
     
     vec_env = DummyVecEnv([make_vec_env_fn(seed=i) for i in range(num_envs)])
@@ -91,8 +114,22 @@ def main():
         default=4,
         help="Number of parallel environments (default: 4)"
     )
+    parser.add_argument(
+        "--random-difficulty",
+        action="store_true",
+        help="Sample difficulty randomly at each episode reset (default: False)"
+    )
+    parser.add_argument(
+        "--difficulties",
+        type=str,
+        default="0,1,2,3,4",
+        help="Comma-separated difficulty levels to sample when randomizing (default: 0,1,2,3,4)"
+    )
     
     args = parser.parse_args()
+    # Lazy import for numpy used in wrapper
+    import numpy as np
+    difficulties = [int(x) for x in args.difficulties.split(",") if x.strip() != ""]
     
     # Create directories if they don't exist
     os.makedirs(os.path.dirname(args.model_path), exist_ok=True)
@@ -105,11 +142,15 @@ def main():
     print(f"Number of parallel environments: {args.num_envs}")
     print(f"Model will be saved to: {args.model_path}")
     print(f"TensorBoard logs: {args.logdir}")
+    if args.random_difficulty:
+        print(f"Random difficulty enabled over: {difficulties}")
     print("=" * 60)
     
     # Create vectorized environment
     print("Creating vectorized environment...")
-    vec_env = make_vec_env(num_envs=args.num_envs)
+    vec_env = make_vec_env(num_envs=args.num_envs, random_difficulty=args.random_difficulty, difficulties=difficulties)
+    # Normalize observations and rewards for parity with Liquid setup
+    vec_env = VecNormalize(vec_env, norm_obs=True, norm_reward=True, clip_obs=10.0, clip_reward=10.0)
     
     # Configure policy (2-layer MLP with 64 hidden units each)
     policy_kwargs = dict(net_arch=[64, 64])
@@ -126,7 +167,7 @@ def main():
         learning_rate=3e-4,
         gae_lambda=0.95,
         clip_range=0.2,
-        ent_coef=0.0,
+        ent_coef=0.01,
         verbose=1,
         tensorboard_log=args.logdir,
         seed=args.seed,
@@ -142,10 +183,14 @@ def main():
     # Save the model
     print(f"\nSaving model to {args.model_path}...")
     model.save(args.model_path)
+    vecnorm_path = args.model_path.replace(".zip", "_vecnorm.pkl")
+    print(f"Saving VecNormalize stats to {vecnorm_path}...")
+    vec_env.save(vecnorm_path)
     
     print("\n" + "=" * 60)
     print("Training completed successfully!")
     print(f"Model saved to: {args.model_path}")
+    print(f"VecNormalize stats saved to: {vecnorm_path}")
     print(f"TensorBoard logs available at: {args.logdir}")
     print("=" * 60)
     print("\nTo view training progress, run:")
