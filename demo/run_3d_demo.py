@@ -110,24 +110,45 @@ async def stream_loop(args: argparse.Namespace) -> None:
     ws = await ensure_ws(url)
     print("[3D DEMO] WebSocket connected!")
 
+    # Load model first to check its observation space
+    print(f"[3D DEMO] Loading model: {args.model_path}")
+    model = PPO.load(args.model_path)
+    model_obs_shape = model.observation_space.shape[0] if hasattr(model.observation_space, 'shape') else None
+    print(f"[3D DEMO] Model expects observation shape: {model_obs_shape}")
+    
     # Create env
     print("[3D DEMO] Creating environment...")
     base_env = DroneWindEnv(difficulty=args.difficulty, enable_pseudo_3d=True)
-    env = ObsAdapterWrapper(base_env)
+    env_obs_shape = base_env.observation_space.shape[0]
+    print(f"[3D DEMO] Environment observation shape: {env_obs_shape}")
+    
+    # Use adapter only if model expects 8 dims but env has 10 dims
+    use_adapter = (model_obs_shape == 8 and env_obs_shape == 10)
+    if use_adapter:
+        print("[3D DEMO] Using observation adapter (8-dim model with 10-dim env)")
+        env = ObsAdapterWrapper(base_env)
+    else:
+        print(f"[3D DEMO] Using direct environment (no adapter needed)")
+        env = base_env
 
-    # Load model and optional VecNormalize
-    print(f"[3D DEMO] Loading model: {args.model_path}")
-    model = PPO.load(args.model_path)
     vecnorm_path = args.model_path.replace(".zip", "_vecnorm.pkl")
-
     use_vecnorm = os.path.exists(vecnorm_path)
     if use_vecnorm:
         print(f"[3D DEMO] Loading VecNormalize stats: {vecnorm_path}")
-        venv = DummyVecEnv([lambda: env])
-        vec_env = VecNormalize.load(vecnorm_path, venv)
-        vec_env.training = False
-        vec_env.norm_reward = False
-        # We'll step through vec_env for actions, but read state from base_env
+        # Create venv matching the env we'll use (with or without adapter)
+        if use_adapter:
+            venv = DummyVecEnv([lambda: ObsAdapterWrapper(DroneWindEnv(difficulty=args.difficulty, enable_pseudo_3d=True))])
+        else:
+            venv = DummyVecEnv([lambda: DroneWindEnv(difficulty=args.difficulty, enable_pseudo_3d=True)])
+        try:
+            vec_env = VecNormalize.load(vecnorm_path, venv)
+            vec_env.training = False
+            vec_env.norm_reward = False
+            print("[3D DEMO] VecNormalize loaded successfully")
+        except AssertionError as e:
+            print(f"[3D DEMO] Warning: VecNormalize observation space mismatch: {e}")
+            print("[3D DEMO] Continuing without VecNormalize (may affect performance)")
+            vec_env = None
     else:
         vec_env = None
 
@@ -151,8 +172,10 @@ async def stream_loop(args: argparse.Namespace) -> None:
 
         while not (done or truncated):
             step_count += 1
+            # Get environment reference for debug output
+            debug_env = vec_env.venv.envs[0].unwrapped if vec_env is not None else env.unwrapped
             if step_count % 30 == 0:
-                print(f"[3D DEMO] Step {step_count}, x={env.unwrapped.x:.2f}, y={env.unwrapped.y:.2f}")
+                print(f"[3D DEMO] Step {step_count}, x={debug_env.x:.2f}, y={debug_env.y:.2f}")
             # Predict action
             if vec_env is not None:
                 action, _ = model.predict(obs, deterministic=True)
@@ -165,7 +188,11 @@ async def stream_loop(args: argparse.Namespace) -> None:
                 obs, reward, done, truncated, info = env.step(action)
 
             # Read current world state from unwrapped env
-            e = env.unwrapped
+            # When using VecNormalize, the actual environment is inside vec_env
+            if vec_env is not None:
+                e = vec_env.venv.envs[0].unwrapped
+            else:
+                e = env.unwrapped
             
             # Get reward (from step return or info)
             current_reward = float(reward) if not vec_env else float(rewards[0])
@@ -175,6 +202,9 @@ async def stream_loop(args: argparse.Namespace) -> None:
             if hasattr(e, 'target_x_min') and hasattr(e, 'target_x_max'):
                 in_target = (e.target_x_min <= e.x <= e.target_x_max and 
                             e.target_y_min <= e.y <= e.target_y_max)
+            
+            # Determine policy name
+            policy_name = "Liquid NN" if args.liquid else "MLP Baseline"
             
             packet = {
                 "x": float(e.x),
@@ -195,6 +225,7 @@ async def stream_loop(args: argparse.Namespace) -> None:
                 "obs": obs.tolist() if isinstance(obs, np.ndarray) else list(obs),
                 "timestamp": time.time(),
                 "liquid": bool(args.liquid),
+                "policy": policy_name,
                 "scale": float(scale),
             }
             try:

@@ -42,7 +42,7 @@ ORANGE = (255, 165, 0)
 class DroneVisualizer:
     """Pygame-based visualizer for the drone environment."""
     
-    def __init__(self, env: DroneWindEnv, model: Optional[PPO] = None, vec_env: Optional[VecNormalize] = None):
+    def __init__(self, env: DroneWindEnv, model: Optional[PPO] = None, vec_env: Optional[VecNormalize] = None, model_name: str = "AI Agent"):
         """
         Initialize the visualizer.
         
@@ -50,10 +50,13 @@ class DroneVisualizer:
             env: DroneWindEnv instance (underlying unwrapped env)
             model: Optional trained PPO model (if None, uses random actions)
             vec_env: Optional VecNormalize wrapper (for normalized observations)
+            model_name: Name of the model to display (e.g., "Liquid NN", "MLP Baseline", "Random Actions")
         """
         self.env = env
         self.model = model
         self.vec_env = vec_env
+        self.model_name = model_name
+        self.current_difficulty = getattr(env, 'difficulty', 2)  # Track current difficulty
         
         # Initialize Pygame
         pygame.init()
@@ -222,6 +225,14 @@ class DroneVisualizer:
         self.screen.blit(text, (10, y_offset))
         y_offset += 30
         
+        # Difficulty level
+        difficulty_names = {0: "No Wind", 1: "Mild", 2: "Medium", 3: "Chaotic", 4: "Strong", 5: "Extreme"}
+        diff_name = difficulty_names.get(self.current_difficulty, f"Level {self.current_difficulty}")
+        diff_color = GREEN if self.current_difficulty <= 1 else YELLOW if self.current_difficulty <= 2 else ORANGE if self.current_difficulty <= 3 else RED
+        text = self.font.render(f"Wind Difficulty: {self.current_difficulty} ({diff_name})", True, diff_color)
+        self.screen.blit(text, (10, y_offset))
+        y_offset += 30
+        
         # In target zone status
         target_color = GREEN if in_target else GRAY
         target_text = "IN TARGET ZONE!" if in_target else "Not in target"
@@ -279,9 +290,9 @@ class DroneVisualizer:
         
         # Model info
         if self.model is not None:
-            text = self.small_font.render("Mode: AI Agent (Liquid NN)", True, CYAN)
+            text = self.small_font.render(f"Mode: AI Agent ({self.model_name})", True, CYAN)
         else:
-            text = self.small_font.render("Mode: Random Actions", True, GRAY)
+            text = self.small_font.render(f"Mode: {self.model_name}", True, GRAY)
         self.screen.blit(text, (10, y_offset))
     
     def run(self, max_steps: int = 500, speed: float = 1.0):
@@ -328,6 +339,11 @@ class DroneVisualizer:
                         step_count = 0
                     elif event.key == pygame.K_ESCAPE:
                         running = False
+                    elif event.key in [pygame.K_0, pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5]:
+                        # Change difficulty level (0-5)
+                        new_difficulty = event.key - pygame.K_0
+                        if 0 <= new_difficulty <= 5:
+                            self._change_difficulty(new_difficulty)
             
             if not paused and not done and not truncated:
                 # Get action (use vec_env if available for normalization)
@@ -411,10 +427,11 @@ class DroneVisualizer:
                 self.screen.blit(text, text_rect)
             
             # Draw controls
-            controls_y = WINDOW_HEIGHT - 80
+            controls_y = WINDOW_HEIGHT - 120
             controls = [
                 "SPACE: Pause/Resume",
                 "R: Reset",
+                "0-5: Change Wind Difficulty",
                 "ESC: Quit"
             ]
             for i, control in enumerate(controls):
@@ -443,6 +460,29 @@ class DroneVisualizer:
                 step_count = 0
         
         pygame.quit()
+    
+    def _change_difficulty(self, new_difficulty: int) -> None:
+        """
+        Change the wind difficulty level during runtime.
+        
+        Args:
+            new_difficulty: New difficulty level (0-5)
+        """
+        # Get the underlying environment
+        if self.vec_env is not None:
+            underlying_env = self.vec_env.envs[0]
+            if hasattr(underlying_env, 'env'):
+                underlying_env = underlying_env.env  # Unwrap Monitor if present
+        else:
+            underlying_env = self.env
+        
+        # Update difficulty
+        if hasattr(underlying_env, 'difficulty'):
+            underlying_env.difficulty = new_difficulty
+            if hasattr(underlying_env, '_configure_difficulty'):
+                underlying_env._configure_difficulty()
+            self.current_difficulty = new_difficulty
+            print(f"Wind difficulty changed to level {new_difficulty}")
 
 
 def main():
@@ -453,13 +493,20 @@ def main():
     parser.add_argument(
         "--model-path",
         type=str,
-        default="models/liquid_policy.zip",
-        help="Path to trained model (default: models/liquid_policy.zip)"
+        default=None,
+        help="Path to trained model (overrides --model option)"
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        choices=["liquid", "mlp", "random"],
+        default="liquid",
+        help="Which model to use: 'liquid' (default), 'mlp', or 'random'"
     )
     parser.add_argument(
         "--random",
         action="store_true",
-        help="Use random actions instead of trained model"
+        help="Use random actions instead of trained model (deprecated: use --model random)"
     )
     parser.add_argument(
         "--max-steps",
@@ -476,44 +523,68 @@ def main():
     
     args = parser.parse_args()
     
+    # Determine model path based on arguments
+    if args.model_path:
+        model_path = args.model_path
+        model_name = "Custom"
+    elif args.random or args.model == "random":
+        model_path = None
+        model_name = "Random"
+    elif args.model == "mlp":
+        model_path = "models/mlp_baseline.zip"
+        model_name = "MLP Baseline"
+    else:  # args.model == "liquid" (default)
+        model_path = "models/liquid_policy.zip"
+        model_name = "Liquid NN"
+    
     # Create environment (vectorized for VecNormalize compatibility)
     def _make_env():
         return DroneWindEnv()
     venv = DummyVecEnv([_make_env])
     
     # Load VecNormalize stats if available
-    vecnorm_path = args.model_path.replace(".zip", "_vecnorm.pkl")
-    if os.path.exists(vecnorm_path):
-        print(f"Loading VecNormalize stats from {vecnorm_path}...")
-        vec_env = VecNormalize.load(vecnorm_path, venv)
-        vec_env.training = False
-        vec_env.norm_reward = False
-    else:
-        print("VecNormalize stats not found; using unnormalized env.")
-        vec_env = venv
+    vec_env = venv
+    if model_path:
+        vecnorm_path = model_path.replace(".zip", "_vecnorm.pkl")
+        if os.path.exists(vecnorm_path):
+            print(f"Loading VecNormalize stats from {vecnorm_path}...")
+            vec_env = VecNormalize.load(vecnorm_path, venv)
+            vec_env.training = False
+            vec_env.norm_reward = False
+        else:
+            print("VecNormalize stats not found; using unnormalized env.")
     
     # Load model if specified
     model = None
-    if not args.random:
-        if os.path.exists(args.model_path):
-            print(f"Loading model from {args.model_path}...")
-            model = PPO.load(args.model_path, env=vec_env)
-            print("Model loaded successfully!")
+    if model_path:
+        if os.path.exists(model_path):
+            print(f"Loading {model_name} model from {model_path}...")
+            model = PPO.load(model_path, env=vec_env)
+            print(f"{model_name} model loaded successfully!")
         else:
-            print(f"Model not found at {args.model_path}, using random actions")
+            print(f"Model not found at {model_path}, using random actions")
+            model_path = None
+            model_name = "Random"
     
     # Get the underlying environment for visualization
     env = venv.envs[0]
     
-    # Create visualizer
-    visualizer = DroneVisualizer(env, model, vec_env)
+    # Create visualizer with model name
+    visualizer = DroneVisualizer(env, model, vec_env, model_name=model_name)
     
     # Run visualization
     print("\nStarting visualization...")
+    print(f"Model: {model_name}")
     print("Controls:")
     print("  SPACE: Pause/Resume")
     print("  R: Reset episode")
+    print("  0-5: Change wind difficulty (0=No wind, 1=Mild, 2=Medium, 3=Chaotic, 4=Strong, 5=Extreme)")
     print("  ESC: Quit")
+    print()
+    print("To run different models:")
+    print("  python demo/visualize_drone.py --model liquid  # Liquid NN (default)")
+    print("  python demo/visualize_drone.py --model mlp     # MLP Baseline")
+    print("  python demo/visualize_drone.py --model random  # Random actions")
     print()
     
     visualizer.run(max_steps=args.max_steps, speed=args.speed)

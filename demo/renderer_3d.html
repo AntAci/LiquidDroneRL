@@ -474,7 +474,12 @@
               worldScale = msg.scale;
             }
             const isLiquid = !!msg.liquid;
-            elPolicy.textContent = isLiquid ? "Liquid" : "MLP Baseline";
+            // Use policy name from packet if available, otherwise infer from liquid flag
+            if (msg.policy) {
+              elPolicy.textContent = msg.policy;
+            } else {
+              elPolicy.textContent = isLiquid ? "Liquid NN" : "MLP Baseline";
+            }
             
             // Update info overlay (matching 2D visualization)
             const elStep = document.getElementById("step");

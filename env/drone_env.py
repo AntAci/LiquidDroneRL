@@ -24,7 +24,7 @@ THRUST = 0.26  # Thrust magnitude per action (increased to handle gravity + wind
 GRAVITY = -1.8  # Constant vertical acceleration (downwards), world units / s^2
 
 # Target zone (box) constants
-TARGET_REWARD = 4.0  # Bonus reward for being in target zone (increased to incentivize staying)
+TARGET_REWARD = 10.0  # Bonus reward for being in target zone (increased significantly to incentivize pursuit)
 TARGET_SPAWN_DELAY = 50  # Steps before target zone appears (after wind starts)
 BOUNDARY_CRASH_PENALTY = -20.0  # Large penalty for hitting boundary
 TARGET_MOVE_SPEED = 0.015  # Target movement speed per step (world units)
@@ -39,8 +39,8 @@ EDGE_MARGIN = EDGE_MARGIN_FRAC * (POSITION_MAX - POSITION_MIN)
 EDGE_PENALTY_COEFF = 0.5  # Strength of boundary proximity penalty
 EFFORT_COEFF = 0.08  # Penalize thrust effort outside target (tuned for gravity)
 EFFORT_IN_TARGET_MULT = 0.3  # Much weaker effort penalty inside target (allows thrust to counteract wind and stay)
-BASE_STEP_COST = -0.01  # Small time penalty to discourage aimless survival
-POTENTIAL_COEFF = 0.5  # Strength of potential-based shaping on distance reduction
+BASE_STEP_COST = 1.0  # Survival reward per step (restored from earlier version)
+POTENTIAL_COEFF = 2.0  # Strength of potential-based shaping on distance reduction (increased to incentivize target pursuit)
 
 # Target box relative size (fractions of world size)
 TARGET_BOX_WIDTH_FRAC = 0.2
@@ -54,8 +54,9 @@ class DroneWindEnv(gym.Env):
     """
     A 2D drone environment with dynamic wind.
     
-    Observation: [x, y, vx, vy, z, vz, wind_x, wind_y]
+    Observation: [x, y, vx, vy, z, vz, wind_x, wind_y, dx_to_target, dy_to_target]
       - z/vz are pseudo-3D variables for visualization only. They do not affect training dynamics.
+      - dx/dy are relative vectors to target center (goal-aware observations for target pursuit)
     Action: Box([-1, 1]^2) - continuous x/y thrust commands (normalized), scaled by THRUST
     """
     
@@ -69,10 +70,11 @@ class DroneWindEnv(gym.Env):
         # Pseudo-3D mode for visualization (z/vz do not affect x–y physics)
         self.enable_pseudo_3d: bool = bool(enable_pseudo_3d)
         
-        # Observation space: [x, y, vx, vy, z, vz, wind_x, wind_y]
+        # Observation space: [x, y, vx, vy, z, vz, wind_x, wind_y, dx_to_target, dy_to_target]
+        # dx/dy are relative vectors to target center (goal-aware observations)
         self.observation_space = spaces.Box(
-            low=np.array([POSITION_MIN, POSITION_MIN, -MAX_VEL, -MAX_VEL, 0.5, -1.0, -self.wind_max, -self.wind_max], dtype=np.float32),
-            high=np.array([POSITION_MAX, POSITION_MAX, MAX_VEL, MAX_VEL, 1.5, 1.0, self.wind_max, self.wind_max], dtype=np.float32),
+            low=np.array([POSITION_MIN, POSITION_MIN, -MAX_VEL, -MAX_VEL, 0.5, -1.0, -self.wind_max, -self.wind_max, -1.0, -1.0], dtype=np.float32),
+            high=np.array([POSITION_MAX, POSITION_MAX, MAX_VEL, MAX_VEL, 1.5, 1.0, self.wind_max, self.wind_max, 1.0, 1.0], dtype=np.float32),
             dtype=np.float32
         )
         
@@ -466,9 +468,15 @@ class DroneWindEnv(gym.Env):
     
     def _get_observation(self) -> np.ndarray:
         """Build observation array from current state."""
+        # Compute relative vector to target center (goal-aware observations)
+        # This is critical for the agent to know where the target is!
+        tx_c = (self.target_x_min + self.target_x_max) * 0.5
+        ty_c = (self.target_y_min + self.target_y_max) * 0.5
+        dx = float(tx_c - self.x)
+        dy = float(ty_c - self.y)
         # Pseudo-3D z/vz are included but do not affect dynamics/reward/termination
         return np.array(
-            [self.x, self.y, self.vx, self.vy, self.z, self.vz, self.wind_x, self.wind_y],
+            [self.x, self.y, self.vx, self.vy, self.z, self.vz, self.wind_x, self.wind_y, dx, dy],
             dtype=np.float32
         )
     
