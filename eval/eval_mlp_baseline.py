@@ -60,14 +60,31 @@ def main():
         print("  python train/train_mlp_ppo.py")
         return
     
-    # Create environment
+    # Create environment (vectorized) and load VecNormalize stats if available
     print("\nCreating environment...")
-    env = DroneWindEnv()
+    from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
+    def _make_env():
+        return DroneWindEnv(difficulty=4)  # Use max difficulty to match training observation space
+    venv = DummyVecEnv([_make_env])
+    vecnorm_path = args.model_path.replace(".zip", "_vecnorm.pkl")
+    if os.path.exists(vecnorm_path):
+        print(f"Loading VecNormalize stats from {vecnorm_path}...")
+        try:
+            vec_env = VecNormalize.load(vecnorm_path, venv)
+            vec_env.training = False
+            vec_env.norm_reward = False
+            print("VecNormalize stats loaded successfully!")
+        except Exception as e:
+            print(f"Warning: Could not load VecNormalize stats: {e}")
+            vec_env = venv
+    else:
+        print("VecNormalize stats not found; using unnormalized env (may degrade performance).")
+        vec_env = venv
     
     # Load the model
     print(f"Loading model from {args.model_path}...")
     try:
-        model = PPO.load(args.model_path, env=env)
+        model = PPO.load(args.model_path, env=vec_env)
         print("Model loaded successfully!")
     except Exception as e:
         print(f"\nError loading model: {e}")
@@ -81,7 +98,8 @@ def main():
     episode_lengths = []
     
     for episode in range(args.episodes):
-        obs, info = env.reset(seed=args.seed)
+        vec_obs = vec_env.reset()
+        obs = vec_obs[0]
         done = False
         truncated = False
         total_reward = 0.0
@@ -89,20 +107,22 @@ def main():
         
         if args.render:
             print(f"\nEpisode {episode + 1}:")
-            env.render()
+            # Note: render() may not work with vectorized env
         
         while not (done or truncated):
             # Get action from the model (deterministic)
             action, _ = model.predict(obs, deterministic=True)
             
             # Step the environment
-            obs, reward, done, truncated, info = env.step(action)
+            vec_obs, rewards_vec, dones, infos = vec_env.step(np.array([action]))
+            obs = vec_obs[0]
+            reward = rewards_vec[0]
+            done = bool(dones[0])
+            truncated = False
+            info = infos[0] if infos else {}
             
             total_reward += reward
             step_count += 1
-            
-            if args.render:
-                env.render()
         
         rewards.append(total_reward)
         episode_lengths.append(step_count)

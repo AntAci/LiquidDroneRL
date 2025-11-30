@@ -41,6 +41,8 @@ EFFORT_COEFF = 0.08  # Penalize thrust effort outside target (tuned for gravity)
 EFFORT_IN_TARGET_MULT = 0.3  # Much weaker effort penalty inside target (allows thrust to counteract wind and stay)
 BASE_STEP_COST = 1.0  # Survival reward per step (restored from earlier version)
 POTENTIAL_COEFF = 2.0  # Strength of potential-based shaping on distance reduction (increased to incentivize target pursuit)
+# One-time bonus to strongly encourage crossing into the target zone
+ENTRY_BONUS = 20.0
 
 # Target box relative size (fractions of world size)
 TARGET_BOX_WIDTH_FRAC = 0.2
@@ -99,6 +101,8 @@ class DroneWindEnv(gym.Env):
         self.ay_applied: float = 0.0
         # Track previous distance to target center for potential shaping
         self.prev_distance_to_target: Optional[float] = None
+        # Track previous in-target state for entry bonus
+        self.prev_in_target: bool = False
         # Target movement state
         self.target_vx: float = 0.0  # Target velocity in x direction
         self.target_vy: float = 0.0  # Target velocity in y direction
@@ -175,6 +179,8 @@ class DroneWindEnv(gym.Env):
         dx0 = self.x - tx_c
         dy0 = self.y - ty_c
         self.prev_distance_to_target = float(np.sqrt(dx0 * dx0 + dy0 * dy0))
+        # Reset entry tracking
+        self.prev_in_target = False
         
         # Build observation
         obs = self._get_observation()
@@ -236,6 +242,8 @@ class DroneWindEnv(gym.Env):
             and self.target_y_min <= self.y <= self.target_y_max
         )
         target_bonus = TARGET_REWARD if in_target else 0.0
+        # Encourage crossing the target boundary at least once
+        entry_bonus = ENTRY_BONUS if (in_target and not self.prev_in_target) else 0.0
         
         # Potential-based shaping: reward progress toward target center
         shaping_reward = 0.0
@@ -286,7 +294,16 @@ class DroneWindEnv(gym.Env):
         # Apply boundary crash penalty if terminated
         boundary_penalty = BOUNDARY_CRASH_PENALTY if terminated else 0.0
         
-        reward = base_reward + target_bonus + speed_penalty + edge_penalty + effort_penalty + shaping_reward + boundary_penalty
+        reward = (
+            base_reward
+            + target_bonus
+            + entry_bonus
+            + speed_penalty
+            + edge_penalty
+            + effort_penalty
+            + shaping_reward
+            + boundary_penalty
+        )
         
         # Check truncation (max steps)
         truncated = self.step_count >= MAX_STEPS
@@ -319,6 +336,8 @@ class DroneWindEnv(gym.Env):
             "speed_penalty": speed_penalty,
             "edge_penalty": edge_penalty,
         }
+        # Update entry tracking after computing reward
+        self.prev_in_target = in_target
         
         return obs, reward, terminated, truncated, info
     
