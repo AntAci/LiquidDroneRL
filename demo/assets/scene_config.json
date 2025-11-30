@@ -1,0 +1,24 @@
+{
+  "scale": 10.0,
+  "drone": {
+    "scale": 1.5,
+    "color": "#00aaff"
+  },
+  "obstacles": {
+    "default_height": 5.0,
+    "default_width": 0.5,
+    "default_depth": 0.5,
+    "color": "#444444"
+  },
+  "wind": {
+    "arrow_scale": 2.0,
+    "color_positive": "#33ff33",
+    "color_negative": "#ff3333"
+  },
+  "camera": {
+    "height_offset": 3.0,
+    "distance": 10.0,
+    "follow_smooth": 0.1
+  }
+}
+

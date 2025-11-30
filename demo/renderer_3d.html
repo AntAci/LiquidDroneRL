@@ -1,0 +1,877 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Drone 3D Viewer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <style>
+      html, body { margin: 0; padding: 0; background: #0b1220; height: 100%; overflow: hidden; }
+      #overlay {
+        position: absolute; top: 10px; left: 10px; color: #ffffff; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        background: rgba(0,0,0,0.35); padding: 10px 12px; border-radius: 8px; line-height: 1.4;
+      }
+      #overlay h1 { font-size: 14px; margin: 0 0 6px 0; font-weight: 600; }
+      #overlay .row { font-size: 12px; opacity: 0.9; }
+      #legend { margin-top: 8px; font-size: 12px; }
+      #legend span { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: middle; border-radius: 2px; }
+      #status { margin-top: 6px; font-size: 12px; color: #cdd6f4; }
+    </style>
+  </head>
+  <body>
+    <div id="overlay">
+      <h1>Liquid PPO Demo — Real-time Wind Adaptation</h1>
+      <div class="row">Policy: <span id="policy">Unknown</span></div>
+      <div class="row">Step: <span id="step">0</span></div>
+      <div class="row">Reward: <span id="reward">0.00</span></div>
+      <div class="row" id="targetStatus">Not in target</div>
+      <div class="row">Position: <span id="position">(0.00, 0.00)</span></div>
+      <div class="row">Velocity: <span id="velocity">(0.00, 0.00)</span></div>
+      <div class="row">Wind: <span id="wind">(0.00, 0.00)</span></div>
+      <div class="row">FPS: <span id="fps">0</span></div>
+      <div id="status">Connecting to ws://localhost:8765 …</div>
+    </div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module">
+      import * as THREE from 'three';
+      import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+      // Scene setup
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0b1220);
+
+      // Camera
+      const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      // Initial camera position: looking at drone's typical starting position
+      // Drone starts around (1.2, 6, 5.1) in Three.js space (lowered)
+      camera.position.set(10, 10, 18); // Good viewing angle (lowered)
+      camera.lookAt(1.2, 6, 5.1); // Look at drone's initial position (lowered)
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      document.body.appendChild(renderer.domElement);
+
+      // Controls (optional for manual orbit)
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.enablePan = false;
+
+      // Lights
+      const ambient = new THREE.AmbientLight(0xffffff, 0.45);
+      scene.add(ambient);
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+      dirLight.position.set(5, -10, 12);
+      dirLight.castShadow = true;
+      scene.add(dirLight);
+
+      // Scale will be updated from packets (default 10)
+      // Define early so it can be used in ground plane and other setup
+      let worldScale = 10.0;
+
+      // Ground plane - lies on X-Z plane (Y=0 is ground level)
+      // Make it large enough to be visible, centered around the boundary area
+      const planeGeo = new THREE.PlaneGeometry(200, 200);
+      const planeMat = new THREE.MeshPhongMaterial({ color: 0x1a2332, side: THREE.DoubleSide });
+      const ground = new THREE.Mesh(planeGeo, planeMat);
+      ground.rotation.x = -Math.PI / 2; // Rotate to lie flat on X-Z plane (Y=0)
+      // Center the ground plane around the boundary (boundary is 0 to worldScale, so center at worldScale/2)
+      ground.position.set(worldScale / 2, 0, worldScale / 2);
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      // Drone model loading - supports GLTF/GLB and OBJ formats
+      const droneColor = 0x00aaff;
+      // Create procedural quadcopter drone model (no file loading needed)
+      const droneGroup = new THREE.Group();
+      droneGroup.position.set(1.2, 6, 5.1); // Initial position
+      scene.add(droneGroup);
+
+      // Central body (cube)
+      const bodyGeo = new THREE.BoxGeometry(0.3, 0.15, 0.3);
+      const bodyMat = new THREE.MeshPhongMaterial({ color: droneColor, shininess: 60, emissive: 0x002244 });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      body.castShadow = true;
+      droneGroup.add(body);
+
+      // Four arms extending from center
+      const armLength = 0.4;
+      const armWidth = 0.05;
+      const armGeo = new THREE.BoxGeometry(armWidth, armWidth, armLength);
+      const armMat = new THREE.MeshPhongMaterial({ color: droneColor, shininess: 60, emissive: 0x002244 });
+      
+      // Front-right arm
+      const arm1 = new THREE.Mesh(armGeo, armMat);
+      arm1.position.set(0.2, 0, 0.2);
+      arm1.rotation.y = Math.PI / 4;
+      arm1.castShadow = true;
+      droneGroup.add(arm1);
+      
+      // Front-left arm
+      const arm2 = new THREE.Mesh(armGeo, armMat);
+      arm2.position.set(-0.2, 0, 0.2);
+      arm2.rotation.y = -Math.PI / 4;
+      arm2.castShadow = true;
+      droneGroup.add(arm2);
+      
+      // Back-right arm
+      const arm3 = new THREE.Mesh(armGeo, armMat);
+      arm3.position.set(0.2, 0, -0.2);
+      arm3.rotation.y = -Math.PI / 4;
+      arm3.castShadow = true;
+      droneGroup.add(arm3);
+      
+      // Back-left arm
+      const arm4 = new THREE.Mesh(armGeo, armMat);
+      arm4.position.set(-0.2, 0, -0.2);
+      arm4.rotation.y = Math.PI / 4;
+      arm4.castShadow = true;
+      droneGroup.add(arm4);
+
+      // Four propellers (small cylinders at arm ends)
+      const propRadius = 0.12;
+      const propHeight = 0.02;
+      const propGeo = new THREE.CylinderGeometry(propRadius, propRadius, propHeight, 16);
+      const propMat = new THREE.MeshPhongMaterial({ color: 0x888888, shininess: 30 });
+      
+      const propPositions = [
+        [0.28, 0.02, 0.28],   // Front-right
+        [-0.28, 0.02, 0.28],  // Front-left
+        [0.28, 0.02, -0.28],  // Back-right
+        [-0.28, 0.02, -0.28]  // Back-left
+      ];
+      
+      propPositions.forEach(([x, y, z]) => {
+        const prop = new THREE.Mesh(propGeo, propMat);
+        prop.position.set(x, y, z);
+        prop.rotation.x = Math.PI / 2; // Lay flat
+        prop.castShadow = true;
+        droneGroup.add(prop);
+      });
+
+      const drone = droneGroup; // Reference for position updates
+      console.log('[Drone] Created procedural quadcopter model');
+
+      // Velocity vector visualization (yellow arrow from drone, like 2D)
+      const velocityArrow = new THREE.ArrowHelper(
+        new THREE.Vector3(1, 0, 0),
+        new THREE.Vector3(0, 0, 0),
+        1.0,
+        0xffff00, // Yellow like 2D
+        0.3,
+        0.15
+      );
+      velocityArrow.visible = false; // Will be shown when velocity > threshold
+      scene.add(velocityArrow);
+
+      // Target zone visualization (semi-transparent magenta box, matching 2D area extruded in 3D)
+      // Base unit cube; we scale per-frame to a modest vertical volume so the drone can be "inside"
+      const targetZoneGeo = new THREE.BoxGeometry(1, 1, 1);
+      const targetZoneMat = new THREE.MeshPhongMaterial({ 
+        color: 0xff00ff, // Magenta color to match 2D visualization (255, 0, 255)
+        transparent: true,
+        opacity: 0.4, // Increased opacity for better visibility (was 0.25)
+        side: THREE.DoubleSide,
+        emissive: 0x440044, // Increased magenta glow for visibility
+        emissiveIntensity: 0.5,
+        // Avoid z-fighting and ensure it renders above the ground
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1
+      });
+      const targetZone = new THREE.Mesh(targetZoneGeo, targetZoneMat);
+      targetZone.visible = false; // Will be shown when target spawns
+      // Draw after ground and grid to ensure visibility
+      targetZone.renderOrder = 2;
+      scene.add(targetZone);
+
+      // Target zone border (wireframe) - brighter magenta for visibility
+      const targetZoneEdges = new THREE.EdgesGeometry(targetZoneGeo);
+      const targetZoneLine = new THREE.LineSegments(
+        targetZoneEdges,
+        new THREE.LineBasicMaterial({ 
+          color: 0xff00ff, // Magenta border
+          linewidth: 2,
+          transparent: true,
+          opacity: 0.8
+        })
+      );
+      // Ensure border draws on top of the target surface
+      targetZoneLine.renderOrder = 3;
+      targetZone.add(targetZoneLine);
+      
+      // Corner markers (small cylinders at the four corners) for better visibility
+      // Short and slim so they don't overreach visually
+      const cornerMarkerGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.3, 12);
+      const cornerMarkerMat = new THREE.MeshPhongMaterial({ 
+        color: 0xff00ff, 
+        transparent: true, 
+        opacity: 0.8,
+        emissive: 0x440044,
+        emissiveIntensity: 0.5
+      });
+      const cornerMarkers = [];
+      // Create 4 corner markers (will be positioned when target zone is updated)
+      for (let i = 0; i < 4; i++) {
+        const marker = new THREE.Mesh(cornerMarkerGeo, cornerMarkerMat.clone());
+        marker.visible = false;
+        scene.add(marker);
+        cornerMarkers.push(marker);
+      }
+
+      // Wind visualization: Tiny blue arrows showing wind flow
+      // Increase count to better cover the entire boundary area
+      const windParticleCount = 250; // More arrows to cover entire boundary
+      
+      // Create a simple arrow geometry using a small cone
+      // We'll use a cone pointing up, then rotate it based on wind direction
+      const arrowLength = 0.6; // Make arrows bigger
+      const arrowRadius = 0.05; // Make arrows thicker
+      const arrowGeo = new THREE.ConeGeometry(arrowRadius, arrowLength, 8);
+      
+      const arrowMat = new THREE.MeshPhongMaterial({ 
+        color: 0x00aaff, // Default blue color
+        transparent: true,
+        opacity: 0.9, // More visible
+        emissive: 0x002244, // Add slight emissive glow
+        emissiveIntensity: 0.3
+      });
+      
+      // Create instanced mesh for arrows
+      const arrowInstances = new THREE.InstancedMesh(arrowGeo, arrowMat, windParticleCount);
+      
+      // Store wind strength for color updates (we'll update material color based on average)
+      let currentWindStrength = 0;
+      
+      // Store data for each arrow
+      const arrowPositions = new Float32Array(windParticleCount * 3);
+      const arrowRotations = new Float32Array(windParticleCount * 4); // quaternions
+      const arrowVelocities = new Float32Array(windParticleCount * 3);
+      const arrowLifetimes = new Float32Array(windParticleCount);
+      const arrowOpacities = new Float32Array(windParticleCount); // Track opacity per arrow
+      const arrowOriginalPositions = new Float32Array(windParticleCount * 3); // Store original spawn positions
+      
+      // Initialize arrows to evenly cover the entire boundary (0 to worldScale)
+      // Use a combination of grid and random for better coverage
+      const arrowGridSize = Math.ceil(Math.sqrt(windParticleCount));
+      
+      for (let i = 0; i < windParticleCount; i++) {
+        const i3 = i * 3;
+        
+        // Mix grid-based and random distribution for full coverage
+        if (i < arrowGridSize * arrowGridSize) {
+          // Grid-based distribution for even coverage
+          const gridX = (i % arrowGridSize) / arrowGridSize;
+          const gridZ = Math.floor(i / arrowGridSize) / arrowGridSize;
+          arrowPositions[i3] = gridX * worldScale + (Math.random() - 0.5) * (worldScale / arrowGridSize) * 0.5;
+          arrowPositions[i3 + 2] = gridZ * worldScale + (Math.random() - 0.5) * (worldScale / arrowGridSize) * 0.5;
+        } else {
+          // Random distribution for remaining arrows
+          arrowPositions[i3] = Math.random() * worldScale;
+          arrowPositions[i3 + 2] = Math.random() * worldScale;
+        }
+        
+        // Ensure within boundary
+        arrowPositions[i3] = Math.max(0, Math.min(worldScale, arrowPositions[i3]));
+        arrowPositions[i3 + 2] = Math.max(0, Math.min(worldScale, arrowPositions[i3 + 2]));
+        
+        // Height between 1-6 (lowered)
+        arrowPositions[i3 + 1] = Math.random() * 5 + 1;
+        
+        // Store original spawn position for respawning
+        arrowOriginalPositions[i3] = arrowPositions[i3];
+        arrowOriginalPositions[i3 + 1] = arrowPositions[i3 + 1];
+        arrowOriginalPositions[i3 + 2] = arrowPositions[i3 + 2];
+        
+        // Random velocity (will be updated based on wind)
+        arrowVelocities[i3] = 0;
+        arrowVelocities[i3 + 1] = 0;
+        arrowVelocities[i3 + 2] = 0;
+        
+        // Lifetime (0-1, resets when reaches 1)
+        arrowLifetimes[i] = Math.random();
+        
+        // Initial opacity (will fade in/out based on lifetime)
+        arrowOpacities[i] = Math.random();
+        
+        // Initial rotation (pointing up, will be updated based on wind)
+        const quaternion = new THREE.Quaternion();
+        quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+        arrowRotations[i * 4] = quaternion.x;
+        arrowRotations[i * 4 + 1] = quaternion.y;
+        arrowRotations[i * 4 + 2] = quaternion.z;
+        arrowRotations[i * 4 + 3] = quaternion.w;
+        
+        // Set instance matrix
+        const matrix = new THREE.Matrix4();
+        matrix.compose(
+          new THREE.Vector3(arrowPositions[i3], arrowPositions[i3 + 1], arrowPositions[i3 + 2]),
+          quaternion,
+          new THREE.Vector3(1.5, 1.5, 1.5) // Scale - make arrows bigger
+        );
+        arrowInstances.setMatrixAt(i, matrix);
+      }
+      
+      arrowInstances.instanceMatrix.needsUpdate = true;
+      scene.add(arrowInstances);
+      console.log(`[Wind Arrows] Created ${windParticleCount} wind arrows`);
+      
+      // Store wind state for arrow updates
+      let currentWindX = 0;
+      let currentWindY = 0;
+
+      // Add a grid helper to see the ground plane (at Y=0, lies on X-Z plane)
+      // Make grid larger to cover the full visible area, centered around boundary
+      // Grid size should be at least 2x the boundary size for good coverage
+      const gridSize = Math.max(40, worldScale * 4); // At least 40 units, or 4x boundary
+      const gridDivisions = Math.floor(gridSize / 2); // More divisions for larger grid
+      const gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x444444, 0x222222);
+      gridHelper.position.set(worldScale / 2, 0.01, worldScale / 2); // Center around boundary area
+      scene.add(gridHelper);
+
+      // Add axes helper for reference
+      const axesHelper = new THREE.AxesHelper(5);
+      scene.add(axesHelper);
+
+      // Create boundary visualization (wireframe box)
+      // Boundaries are from 0 to 1.0 in env, scaled by worldScale (10.0) in 3D
+      const boundaryHeight = 6; // Height of boundary walls (reduced to avoid oversized visuals)
+      const boundaryColor = 0xff3333; // Red color for boundaries (danger zone)
+      const boundaryOpacity = 0.8; // More visible
+      
+      // Create boundary box using EdgesGeometry for wireframe
+      // Environment coordinates: 0 to 1.0 -> 3D: 0 to worldScale
+      const boundarySize = worldScale; // 10.0 by default
+      const boundaryBox = new THREE.BoxGeometry(boundarySize, boundaryHeight, boundarySize);
+      const boundaryEdges = new THREE.EdgesGeometry(boundaryBox);
+      const boundaryLine = new THREE.LineSegments(
+        boundaryEdges,
+        new THREE.LineBasicMaterial({ 
+          color: boundaryColor, 
+          transparent: true, 
+          opacity: boundaryOpacity,
+          linewidth: 2
+        })
+      );
+      // Position at center: boundary goes from 0 to worldScale, so center is at worldScale/2
+      boundaryLine.position.set(boundarySize / 2, boundaryHeight / 2, boundarySize / 2);
+      scene.add(boundaryLine);
+      
+      // Add corner posts for better visibility (short and unobtrusive)
+      const cornerPostHeight = 1.0; // Keep posts low so they don't overreach
+      const cornerPostRadius = 0.06;
+      const cornerPostGeo = new THREE.CylinderGeometry(cornerPostRadius, cornerPostRadius, cornerPostHeight, 8);
+      const cornerPostMat = new THREE.MeshPhongMaterial({ 
+        color: boundaryColor, 
+        transparent: true, 
+        opacity: boundaryOpacity * 0.8 
+      });
+      
+      // Four corner posts
+      const corners = [
+        [0, cornerPostHeight / 2, 0],
+        [boundarySize, cornerPostHeight / 2, 0],
+        [boundarySize, cornerPostHeight / 2, boundarySize],
+        [0, cornerPostHeight / 2, boundarySize]
+      ];
+      
+      corners.forEach(([x, y, z]) => {
+        const post = new THREE.Mesh(cornerPostGeo, cornerPostMat);
+        post.position.set(x, y, z);
+        scene.add(post);
+      });
+      
+      // Add floor boundary outline (rectangle on the ground)
+      const floorOutline = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0.05, 0),
+        new THREE.Vector3(boundarySize, 0.05, 0),
+        new THREE.Vector3(boundarySize, 0.05, boundarySize),
+        new THREE.Vector3(0, 0.05, boundarySize),
+        new THREE.Vector3(0, 0.05, 0) // Close the loop
+      ]);
+      const floorLine = new THREE.Line(
+        floorOutline,
+        new THREE.LineBasicMaterial({ 
+          color: boundaryColor, 
+          transparent: true, 
+          opacity: boundaryOpacity * 0.7,
+          linewidth: 2
+        })
+      );
+      scene.add(floorLine);
+
+      // Camera follow parameters
+      const followOffset = new THREE.Vector3(8, 3, 12); // Better viewing angle (lowered height)
+      const smooth = 0.1;
+
+      // Stats overlay
+      const elPolicy = document.getElementById("policy");
+      const elFps = document.getElementById("fps");
+      const elStatus = document.getElementById("status");
+
+      let lastTime = performance.now();
+      let accum = 0;
+      let frames = 0;
+      function updateFPS() {
+        const now = performance.now();
+        const dt = now - lastTime;
+        lastTime = now;
+        accum += dt;
+        frames += 1;
+        if (accum >= 500) {
+          elFps.textContent = Math.round(1000 * frames / accum).toString();
+          frames = 0; accum = 0;
+        }
+      }
+
+      // WebSocket connection
+      let socket = null;
+      let messageCount = 0;
+      function connectWS() {
+        socket = new WebSocket("ws://localhost:8765");
+        socket.onopen = () => { 
+          elStatus.textContent = "Connected."; 
+          console.log("[WS] Connected to bridge");
+        };
+        socket.onclose = () => { elStatus.textContent = "Disconnected. Reconnecting…"; setTimeout(connectWS, 1000); };
+        socket.onerror = (err) => { 
+          elStatus.textContent = "Connection error. Reconnecting…"; 
+          console.error("[WS] Error:", err);
+        };
+        socket.onmessage = (event) => {
+          messageCount++;
+          if (messageCount === 1 || messageCount % 30 === 0) {
+            console.log(`[WS] Received message #${messageCount}:`, event.data.substring(0, 100));
+          }
+          try {
+            const msg = JSON.parse(event.data);
+            // Packet fields: x,y,z, vx, vy, wind_x, wind_y, step, reward, in_target, target bounds, etc.
+            const x = msg.x ?? 0;
+            const y = msg.y ?? 0;
+            const z = msg.z ?? 1;
+            const vx = msg.vx ?? 0;
+            const vy = msg.vy ?? 0;
+            const wind_x = msg.wind_x ?? 0;
+            const wind_y = msg.wind_y ?? 0;
+            const step = msg.step ?? 0;
+            const reward = msg.reward ?? 0;
+            const in_target = !!msg.in_target;
+            const target_spawned = !!msg.target_spawned;
+            const target_x_min = msg.target_x_min ?? 0;
+            const target_x_max = msg.target_x_max ?? 0;
+            const target_y_min = msg.target_y_min ?? 0;
+            const target_y_max = msg.target_y_max ?? 0;
+            
+            if (typeof msg.scale === "number") {
+              worldScale = msg.scale;
+            }
+            const isLiquid = !!msg.liquid;
+            elPolicy.textContent = isLiquid ? "Liquid" : "MLP Baseline";
+            
+            // Update info overlay (matching 2D visualization)
+            const elStep = document.getElementById("step");
+            const elReward = document.getElementById("reward");
+            const targetStatusEl = document.getElementById("targetStatus");
+            const elPosition = document.getElementById("position");
+            const elVelocity = document.getElementById("velocity");
+            const elWind = document.getElementById("wind");
+            
+            if (elStep) elStep.textContent = step.toString();
+            if (elReward) elReward.textContent = reward.toFixed(2);
+            if (targetStatusEl) {
+              targetStatusEl.textContent = in_target ? "IN TARGET ZONE!" : "Not in target";
+              targetStatusEl.style.color = in_target ? "#00ff00" : "#888888";
+            }
+            if (elPosition) elPosition.textContent = `(${x.toFixed(2)}, ${y.toFixed(2)})`;
+            if (elVelocity) elVelocity.textContent = `(${vx.toFixed(2)}, ${vy.toFixed(2)})`;
+            if (elWind) elWind.textContent = `(${wind_x.toFixed(2)}, ${wind_y.toFixed(2)})`;
+            // Update drone transform (map x->X, y->Z, z->Y in Three space for nice view)
+            // Ensure drone is at same height as wind arrows (1-6 range)
+            // Map env z (typically 0.8-1.2) to wind arrow height range (1-6)
+            // Clamp drone position to boundary (0 to worldScale) for visualization
+            const clampedX = Math.max(0, Math.min(worldScale, x * worldScale));
+            const clampedY = Math.max(0, Math.min(worldScale, y * worldScale));
+            // Map z from env range (0.5-1.5) to wind arrow height (1-6)
+            const normalizedZ = Math.max(0.5, Math.min(1.5, z)); // Clamp to expected range
+            const newY = 1 + (normalizedZ - 0.5) * 5; // Map 0.5-1.5 to 1-6 (same as wind arrows)
+            droneGroup.position.set(clampedX, newY, clampedY);
+            
+            // Visual indicator: change drone color to red when at or very close to boundary
+            const boundaryMargin = 0.02 * worldScale; // 2% of boundary size
+            const nearBoundaryX = (clampedX < boundaryMargin || clampedX > worldScale - boundaryMargin);
+            const nearBoundaryY = (clampedY < boundaryMargin || clampedY > worldScale - boundaryMargin);
+            const atBoundary = nearBoundaryX || nearBoundaryY;
+            
+            // Update drone color (works with both loaded models and fallback box)
+            if (drone) {
+              const targetColor = atBoundary ? 0xff0000 : droneColor;
+              const targetEmissive = atBoundary ? 0x330000 : 0x002244;
+              drone.traverse((child) => {
+                if (child.isMesh && child.material) {
+                  // Handle both single material and array of materials
+                  const materials = Array.isArray(child.material) ? child.material : [child.material];
+                  materials.forEach((mat) => {
+                    if (mat.isMeshPhongMaterial || mat.isMeshStandardMaterial) {
+                      mat.color.setHex(targetColor);
+                      mat.emissive.setHex(targetEmissive);
+                    }
+                  });
+                }
+              });
+            }
+            
+            if (messageCount === 1 || messageCount % 30 === 0) {
+              console.log(`[WS] Updated drone position: (${clampedX.toFixed(2)}, ${newY.toFixed(2)}, ${clampedY.toFixed(2)})${atBoundary ? ' [AT BOUNDARY!]' : ''}`);
+            }
+
+            // Update velocity vector (yellow arrow from drone, like 2D)
+            const velMag = Math.sqrt(vx * vx + vy * vy);
+            if (velMag > 0.01) {
+              // Show velocity vector
+              velocityArrow.visible = true;
+              velocityArrow.position.copy(droneGroup.position);
+              // Direction in X-Z plane (vx -> X, vy -> Z)
+              const velDir = new THREE.Vector3(vx, 0, vy).normalize();
+              const velLength = Math.min(velMag * 2, 3.0); // Scale for visibility
+              velocityArrow.setDirection(velDir);
+              velocityArrow.setLength(velLength, 0.3, 0.15);
+            } else {
+              velocityArrow.visible = false;
+            }
+
+            // Update target zone visualization (magenta box, like 2D)
+            // Show target zone if we have valid bounds (even before spawn, but dimmer)
+            if (target_x_max > target_x_min && target_y_max > target_y_min) {
+              targetZone.visible = true;
+              // Calculate target zone center and size in 3D space
+              // Environment coordinates are 0.0 to 1.0, scale to worldScale (10.0)
+              const targetCenterX = ((target_x_min + target_x_max) / 2) * worldScale;
+              const targetCenterZ = ((target_y_min + target_y_max) / 2) * worldScale;
+              const targetWidth = (target_x_max - target_x_min) * worldScale;
+              const targetDepth = (target_y_max - target_y_min) * worldScale;
+              
+              // Create a modest vertical volume so the drone is visibly inside when in-target (2D logic)
+              // Keep it not too big: height ~ 4 (covers Y ~ 1 to 5 in our visual range)
+              const targetVolHeight = 4.0;
+              const targetYCenter = 3.0; // Mid-height of the visual flight band
+              targetZone.position.set(targetCenterX, targetYCenter, targetCenterZ);
+              // Scale: base geometry is 1x1x1 -> scale to (width, height, depth)
+              targetZone.scale.set(targetWidth, targetVolHeight, targetDepth);
+              
+              // Adjust opacity and glow based on whether target has spawned and if drone is in it
+              if (in_target && target_spawned) {
+                // Drone is in target zone - make it very visible with pulsing glow
+                targetZoneMat.opacity = 0.7; // Very visible
+                targetZoneMat.emissiveIntensity = 1.0; // Strong glow
+                targetZoneMat.emissive.setHex(0x8800ff); // Brighter magenta glow
+              } else if (target_spawned) {
+                // Target spawned but drone not in it
+                targetZoneMat.opacity = 0.5;
+                targetZoneMat.emissiveIntensity = 0.6;
+                targetZoneMat.emissive.setHex(0x440044); // Normal glow
+              } else {
+                // Target not spawned yet
+                targetZoneMat.opacity = 0.25;
+                targetZoneMat.emissiveIntensity = 0.2;
+                targetZoneMat.emissive.setHex(0x220022); // Dim glow
+              }
+              targetZoneMat.needsUpdate = true;
+              
+              // Also update border line visibility
+              if (targetZoneLine) {
+                if (in_target && target_spawned) {
+                  targetZoneLine.material.opacity = 1.0; // Fully visible border when in target
+                  targetZoneLine.material.color.setHex(0xff00ff); // Bright magenta
+                } else if (target_spawned) {
+                  targetZoneLine.material.opacity = 0.8;
+                  targetZoneLine.material.color.setHex(0xff00ff);
+                } else {
+                  targetZoneLine.material.opacity = 0.5;
+                  targetZoneLine.material.color.setHex(0xcc00cc);
+                }
+                targetZoneLine.material.needsUpdate = true;
+              }
+              
+              // Update corner markers positions (place them at the lower corners of the volume)
+              if (cornerMarkers && cornerMarkers.length === 4) {
+                const halfWidth = targetWidth / 2;
+                const halfDepth = targetDepth / 2;
+                const bottomY = targetYCenter - (targetVolHeight / 2);
+                const markerHeight = bottomY + 0.15; // small posts near the lower face
+                
+                // Four corners: front-left, front-right, back-left, back-right
+                cornerMarkers[0].position.set(targetCenterX - halfWidth, markerHeight, targetCenterZ - halfDepth); // Front-left
+                cornerMarkers[1].position.set(targetCenterX + halfWidth, markerHeight, targetCenterZ - halfDepth); // Front-right
+                cornerMarkers[2].position.set(targetCenterX - halfWidth, markerHeight, targetCenterZ + halfDepth); // Back-left
+                cornerMarkers[3].position.set(targetCenterX + halfWidth, markerHeight, targetCenterZ + halfDepth); // Back-right
+                
+                // Show/hide and adjust opacity based on state
+                const markerVisible = target_spawned || (target_x_max > target_x_min && target_y_max > target_y_min);
+                const markerOpacity = in_target && target_spawned ? 1.0 : (target_spawned ? 0.8 : 0.5);
+                
+                cornerMarkers.forEach(marker => {
+                  marker.visible = markerVisible;
+                  if (marker.material) {
+                    marker.material.opacity = markerOpacity;
+                    if (in_target && target_spawned) {
+                      marker.material.emissiveIntensity = 1.0;
+                      marker.material.emissive.setHex(0x8800ff);
+                    } else {
+                      marker.material.emissiveIntensity = 0.5;
+                      marker.material.emissive.setHex(0x440044);
+                    }
+                    marker.material.needsUpdate = true;
+                  }
+                });
+              }
+              
+              // Debug logging - log every step for first 10 steps, then every 50
+              if (step <= 10 || (step % 50 === 0)) {
+                const droneX3D = x * worldScale;
+                const droneZ3D = y * worldScale;
+                console.log(`[Target Zone] Step ${step}: Visible=true, spawned=${target_spawned}, in_target=${in_target}`);
+                console.log(`  Env bounds: x[${target_x_min.toFixed(3)}, ${target_x_max.toFixed(3)}], y[${target_y_min.toFixed(3)}, ${target_y_max.toFixed(3)}]`);
+                console.log(`  Drone env: (${x.toFixed(3)}, ${y.toFixed(3)}) -> 3D: (${droneX3D.toFixed(2)}, ${droneZ3D.toFixed(2)})`);
+                console.log(`  Target 3D: center=(${targetCenterX.toFixed(2)}, ${targetYCenter.toFixed(2)}, ${targetCenterZ.toFixed(2)}), size=(${targetWidth.toFixed(2)}, ${targetVolHeight.toFixed(2)}, ${targetDepth.toFixed(2)})`);
+                console.log(`  Drone in target? X: ${x >= target_x_min && x <= target_x_max}, Y: ${y >= target_y_min && y <= target_y_max}`);
+              }
+            } else {
+              targetZone.visible = false;
+              if (step === 1 || (step % 100 === 0)) {
+                console.log(`[Target Zone] Hidden - invalid bounds, x: [${target_x_min.toFixed(2)}, ${target_x_max.toFixed(2)}], y: [${target_y_min.toFixed(2)}, ${target_y_max.toFixed(2)}]`);
+              }
+            }
+
+            // Update wind state for arrow system
+            currentWindX = wind_x;
+            currentWindY = wind_y;
+            
+            // Update arrow velocities and rotations based on wind
+            const windMag = Math.sqrt(wind_x * wind_x + wind_y * wind_y);
+            const windSpeed = windMag * 1.2; // Scale for visual effect - make movement more visible
+            
+            // Calculate wind direction vector (in X-Z plane, Y is up)
+            const windDir = new THREE.Vector3(wind_x, 0, wind_y);
+            if (windMag > 0.01) {
+              windDir.normalize();
+            } else {
+              windDir.set(1, 0, 0); // Default direction
+            }
+            
+            // Update all arrows
+            for (let i = 0; i < windParticleCount; i++) {
+              const i3 = i * 3;
+              // Set velocity based on wind direction with slight random variation for natural movement
+              const variation = 0.15; // 15% random variation
+              const randX = (Math.random() - 0.5) * variation;
+              const randZ = (Math.random() - 0.5) * variation;
+              arrowVelocities[i3] = wind_x * windSpeed * (1 + randX);
+              arrowVelocities[i3 + 1] = (Math.random() - 0.5) * 0.3; // Slight vertical drift
+              arrowVelocities[i3 + 2] = wind_y * windSpeed * (1 + randZ);
+              
+              // Calculate rotation quaternion to point arrow in wind direction
+              // Arrow (cone) points in +Y by default, we need to rotate it to point horizontally in wind direction
+              const quaternion = new THREE.Quaternion();
+              
+              if (windMag > 0.01) {
+                // Normalize wind direction
+                const windNormX = wind_x / windMag;
+                const windNormZ = wind_y / windMag;
+                
+                // Arrow points in +Y by default. To point in horizontal direction (windNormX, 0, windNormZ):
+                // 1. Rotate 90 degrees around Z axis to tilt from vertical to horizontal
+                // 2. Rotate around Y axis to align with wind direction
+                const euler = new THREE.Euler();
+                euler.setFromQuaternion(quaternion);
+                // First, rotate to horizontal (90 degrees around Z)
+                // Then rotate to wind direction (angle around Y)
+                const windAngle = Math.atan2(windNormX, windNormZ);
+                euler.set(0, windAngle, -Math.PI / 2); // X=0, Y=wind angle, Z=-90 to tilt horizontal
+                quaternion.setFromEuler(euler);
+              } else {
+                // No wind, point in default direction (up)
+                quaternion.identity();
+              }
+              
+              arrowRotations[i * 4] = quaternion.x;
+              arrowRotations[i * 4 + 1] = quaternion.y;
+              arrowRotations[i * 4 + 2] = quaternion.z;
+              arrowRotations[i * 4 + 3] = quaternion.w;
+            }
+            
+            // Update arrow material color based on wind strength
+            // Wind magnitude typically ranges from 0 to ~3.0
+            // Map to color: white (no wind) -> blue -> orange -> red (high wind)
+            currentWindStrength = Math.min(windMag / 3.0, 1.0); // Normalize to 0-1
+            
+            if (currentWindStrength < 0.05) {
+              // No wind: white
+              arrowMat.color.setHex(0xffffff);
+              arrowMat.emissive.setHex(0x333333);
+            } else if (currentWindStrength < 0.3) {
+              // Weak wind: blue
+              const t = (currentWindStrength - 0.05) / 0.25; // 0 to 1
+              arrowMat.color.setHex(0x0000ff); // Blue
+              arrowMat.emissive.setHex(0x000033);
+            } else if (currentWindStrength < 0.6) {
+              // Medium wind: blue to orange transition
+              const t = (currentWindStrength - 0.3) / 0.3; // 0 to 1
+              // Interpolate from blue (0x0000ff) to orange (0xff8800)
+              const r = Math.floor(0 + t * 255);
+              const g = Math.floor(0 + t * 136);
+              const b = Math.floor(255 - t * 255);
+              arrowMat.color.setHex((r << 16) | (g << 8) | b);
+              arrowMat.emissive.setHex(0x330000);
+            } else if (currentWindStrength < 0.85) {
+              // Strong wind: orange
+              arrowMat.color.setHex(0xff8800); // Orange
+              arrowMat.emissive.setHex(0x330000);
+            } else {
+              // Very strong wind: red
+              const t = (currentWindStrength - 0.85) / 0.15; // 0 to 1
+              // Interpolate from orange to red
+              const r = 255;
+              const g = Math.floor(136 - t * 136); // 136 to 0
+              const b = 0;
+              arrowMat.color.setHex((r << 16) | (g << 8) | b);
+              arrowMat.emissive.setHex(0x660000);
+            }
+            
+            // Update all arrow instance matrices
+            updateArrowMatrices();
+          } catch (e) {
+            console.error("[WS] Error parsing message:", e, event.data);
+          }
+        };
+      }
+      connectWS();
+
+      // Function to update all arrow instance matrices
+      function updateArrowMatrices() {
+        for (let i = 0; i < windParticleCount; i++) {
+          const i3 = i * 3;
+          const quaternion = new THREE.Quaternion(
+            arrowRotations[i * 4],
+            arrowRotations[i * 4 + 1],
+            arrowRotations[i * 4 + 2],
+            arrowRotations[i * 4 + 3]
+          );
+          
+          const matrix = new THREE.Matrix4();
+          matrix.compose(
+            new THREE.Vector3(arrowPositions[i3], arrowPositions[i3 + 1], arrowPositions[i3 + 2]),
+            quaternion,
+            new THREE.Vector3(1.5, 1.5, 1.5) // Scale - make arrows bigger
+          );
+          arrowInstances.setMatrixAt(i, matrix);
+        }
+        arrowInstances.instanceMatrix.needsUpdate = true;
+      }
+
+      // Update wind arrows animation
+      function updateWindArrows(deltaTime) {
+        // Use worldScale as the boundary (arrows should stay within 0 to worldScale)
+        const boundaryMin = 0;
+        const boundaryMax = worldScale;
+        const heightMin = 0;
+        const heightMax = 8;
+        let totalOpacity = 0;
+        
+        for (let i = 0; i < windParticleCount; i++) {
+          const i3 = i * 3;
+          
+          // Update position based on velocity (smooth movement)
+          arrowPositions[i3] += arrowVelocities[i3] * deltaTime;
+          arrowPositions[i3 + 1] += arrowVelocities[i3 + 1] * deltaTime;
+          arrowPositions[i3 + 2] += arrowVelocities[i3 + 2] * deltaTime;
+          
+          // Clamp arrows to stay within boundary
+          arrowPositions[i3] = Math.max(boundaryMin, Math.min(boundaryMax, arrowPositions[i3]));
+          arrowPositions[i3 + 2] = Math.max(boundaryMin, Math.min(boundaryMax, arrowPositions[i3 + 2]));
+          arrowPositions[i3 + 1] = Math.max(heightMin, Math.min(heightMax, arrowPositions[i3 + 1]));
+          
+          // Update lifetime
+          arrowLifetimes[i] += deltaTime * 0.8; // Slightly faster aging
+          
+          // Update opacity based on lifetime (fade in when young, fade out when old)
+          // Fade in: 0-0.2 of lifetime (0 to full opacity)
+          // Full: 0.2-0.8 of lifetime (full opacity)
+          // Fade out: 0.8-1.0 of lifetime (full to 0 opacity)
+          if (arrowLifetimes[i] < 0.2) {
+            // Fade in
+            arrowOpacities[i] = arrowLifetimes[i] / 0.2;
+          } else if (arrowLifetimes[i] < 0.8) {
+            // Full opacity
+            arrowOpacities[i] = 1.0;
+          } else {
+            // Fade out
+            arrowOpacities[i] = 1.0 - (arrowLifetimes[i] - 0.8) / 0.2;
+          }
+          
+          totalOpacity += arrowOpacities[i];
+          
+          // Reset arrows that go out of bounds or reach end of lifetime
+          if (arrowPositions[i3] < boundaryMin || arrowPositions[i3] > boundaryMax ||
+              arrowPositions[i3 + 2] < boundaryMin || arrowPositions[i3 + 2] > boundaryMax ||
+              arrowPositions[i3 + 1] < heightMin || arrowPositions[i3 + 1] > heightMax ||
+              arrowLifetimes[i] > 1.0) {
+            // Reset to original spawn position for continuous drift effect
+            // Arrows will drift from their original spots and reset back to continue the flow
+            arrowPositions[i3] = arrowOriginalPositions[i3];
+            arrowPositions[i3 + 1] = arrowOriginalPositions[i3 + 1];
+            arrowPositions[i3 + 2] = arrowOriginalPositions[i3 + 2];
+            
+            arrowLifetimes[i] = 0;
+            arrowOpacities[i] = 0; // Start faded in
+          }
+        }
+        
+        // Update material opacity based on average arrow opacity for visual feedback
+        const avgOpacity = totalOpacity / windParticleCount;
+        arrowMat.opacity = Math.max(0.3, Math.min(0.95, avgOpacity * 0.8 + 0.2));
+        
+        // Update all arrow matrices
+        updateArrowMatrices();
+      }
+
+      let lastFrameTime = performance.now();
+      
+      // Animation loop
+      function animate() {
+        requestAnimationFrame(animate);
+        
+        const now = performance.now();
+        const deltaTime = Math.min((now - lastFrameTime) / 1000, 0.1); // Cap at 100ms
+        lastFrameTime = now;
+        
+        updateFPS();
+        updateWindArrows(deltaTime);
+        
+        // Camera follow with smoothing
+        const desired = droneGroup.position.clone().add(followOffset);
+        camera.position.lerp(desired, smooth);
+        camera.lookAt(droneGroup.position);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      // Resize
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    </script>
+  </body>
+  </html>
+
+

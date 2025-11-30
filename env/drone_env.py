@@ -1,7 +1,8 @@
 """
 A 2D drone environment with dynamic wind forces for reinforcement learning.
-The drone can apply discrete thrust actions while being affected by smoothly varying wind.
 The goal is to navigate and survive within the bounded world.
+This variant supports a lightweight pseudo-3D z-dimension for visualization only:
+z and vz oscillate subtly and do not affect x–y physics, rewards, or termination.
 """
 
 import numpy as np
@@ -53,22 +54,25 @@ class DroneWindEnv(gym.Env):
     """
     A 2D drone environment with dynamic wind.
     
-    Observation: [x, y, vx, vy, wind_x, wind_y, dx_to_target, dy_to_target]
+    Observation: [x, y, vx, vy, z, vz, wind_x, wind_y]
+      - z/vz are pseudo-3D variables for visualization only. They do not affect training dynamics.
     Action: Box([-1, 1]^2) - continuous x/y thrust commands (normalized), scaled by THRUST
     """
     
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
     
-    def __init__(self, difficulty: int = 2):
+    def __init__(self, difficulty: int = 2, enable_pseudo_3d: bool = True):
         super().__init__()
         # Difficulty controls wind strength and noise (0..4)
         self.difficulty: int = int(difficulty)
         self._configure_difficulty()
+        # Pseudo-3D mode for visualization (z/vz do not affect x–y physics)
+        self.enable_pseudo_3d: bool = bool(enable_pseudo_3d)
         
-        # Observation space: [x, y, vx, vy, wind_x, wind_y, dx_to_target, dy_to_target]
+        # Observation space: [x, y, vx, vy, z, vz, wind_x, wind_y]
         self.observation_space = spaces.Box(
-            low=np.array([POSITION_MIN, POSITION_MIN, -MAX_VEL, -MAX_VEL, -self.wind_max, -self.wind_max, -1.0, -1.0], dtype=np.float32),
-            high=np.array([POSITION_MAX, POSITION_MAX, MAX_VEL, MAX_VEL, self.wind_max, self.wind_max, 1.0, 1.0], dtype=np.float32),
+            low=np.array([POSITION_MIN, POSITION_MIN, -MAX_VEL, -MAX_VEL, 0.5, -1.0, -self.wind_max, -self.wind_max], dtype=np.float32),
+            high=np.array([POSITION_MAX, POSITION_MAX, MAX_VEL, MAX_VEL, 1.5, 1.0, self.wind_max, self.wind_max], dtype=np.float32),
             dtype=np.float32
         )
         
@@ -80,6 +84,9 @@ class DroneWindEnv(gym.Env):
         self.y: float = 0.0
         self.vx: float = 0.0
         self.vy: float = 0.0
+        # Pseudo-3D state (visualization only)
+        self.z: float = 1.0
+        self.vz: float = 0.0
         self.wind_x: float = 0.0
         self.wind_y: float = 0.0
         self.wind_target_x: float = 0.0
@@ -121,6 +128,14 @@ class DroneWindEnv(gym.Env):
         self.y = 0.5
         self.vx = 0.0
         self.vy = 0.0
+        # Pseudo-3D initial state
+        if self.enable_pseudo_3d:
+            self.z = 1.0
+            self.vz = 0.0
+        else:
+            # Deterministic 2D mode: keep z/vz fixed but included in observation
+            self.z = 1.0
+            self.vz = 0.0
         self.wind_x = 0.0
         self.wind_y = 0.0
         self.wind_target_x = 0.0
@@ -194,6 +209,22 @@ class DroneWindEnv(gym.Env):
         
         # Apply physics update
         self._apply_physics(action)
+        
+        # Update pseudo-3D (visual-only) motion
+        if self.enable_pseudo_3d:
+            # Slight coupling to wind_y and small random noise
+            noise = float(self.np_random.normal(loc=0.0, scale=0.01))
+            self.vz += 0.02 * self.wind_y + noise
+            # Clamp vz to a small range
+            self.vz = float(np.clip(self.vz, -0.3, 0.3))
+            # Integrate z
+            self.z += self.vz * DT
+            # Clamp z to a subtle band
+            self.z = float(np.clip(self.z, 0.8, 1.2))
+        else:
+            # Keep fixed in deterministic 2D mode
+            self.z = 1.0
+            self.vz = 0.0
         
         # Compute reward
         base_reward = BASE_STEP_COST  # Small time penalty
@@ -435,13 +466,9 @@ class DroneWindEnv(gym.Env):
     
     def _get_observation(self) -> np.ndarray:
         """Build observation array from current state."""
-        # Compute relative vector to target center
-        tx_c = (self.target_x_min + self.target_x_max) * 0.5
-        ty_c = (self.target_y_min + self.target_y_max) * 0.5
-        dx = float(tx_c - self.x)
-        dy = float(ty_c - self.y)
+        # Pseudo-3D z/vz are included but do not affect dynamics/reward/termination
         return np.array(
-            [self.x, self.y, self.vx, self.vy, self.wind_x, self.wind_y, dx, dy],
+            [self.x, self.y, self.vx, self.vy, self.z, self.vz, self.wind_x, self.wind_y],
             dtype=np.float32
         )
     
@@ -491,8 +518,8 @@ class DroneWindEnv(gym.Env):
         """
         print(
             f"Step {self.step_count}: "
-            f"x={self.x:.2f}, y={self.y:.2f}, "
-            f"vx={self.vx:.2f}, vy={self.vy:.2f}, "
+            f"x={self.x:.2f}, y={self.y:.2f}, z={self.z:.2f}, "
+            f"vx={self.vx:.2f}, vy={self.vy:.2f}, vz={self.vz:.2f}, "
             f"wind=({self.wind_x:.2f}, {self.wind_y:.2f})"
         )
 
