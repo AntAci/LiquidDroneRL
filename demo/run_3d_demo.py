@@ -157,10 +157,23 @@ async def stream_loop(args: argparse.Namespace) -> None:
 
     episodes = int(args.episodes)
     fps_dt = 1.0 / float(args.fps)
-    print(f"[3D DEMO] Starting {episodes} episode(s) at {args.fps} FPS...")
+    continuous_mode = (episodes == 0)
+    
+    if continuous_mode:
+        print(f"[3D DEMO] Starting continuous demo (infinite episodes) at {args.fps} FPS...")
+        print("[3D DEMO] Press Ctrl+C to stop")
+    else:
+        print(f"[3D DEMO] Starting {episodes} episode(s) at {args.fps} FPS...")
 
-    for ep in range(episodes):
-        print(f"[3D DEMO] Episode {ep + 1}/{episodes}")
+    ep = 0
+    while True:
+        ep += 1
+        if not continuous_mode and ep > episodes:
+            break
+        if continuous_mode:
+            print(f"[3D DEMO] Episode {ep} (continuous mode)")
+        else:
+            print(f"[3D DEMO] Episode {ep}/{episodes}")
         if vec_env is not None:
             vec_obs = vec_env.reset()
             obs = vec_obs[0]
@@ -177,15 +190,18 @@ async def stream_loop(args: argparse.Namespace) -> None:
             if step_count % 30 == 0:
                 print(f"[3D DEMO] Step {step_count}, x={debug_env.x:.2f}, y={debug_env.y:.2f}")
             # Predict action
+            current_info = {}
             if vec_env is not None:
                 action, _ = model.predict(obs, deterministic=True)
                 vec_obs, rewards, dones, infos = vec_env.step(np.array([action]))
                 obs = vec_obs[0]
                 done = bool(dones[0])
                 truncated = False
+                current_info = infos[0] if infos and len(infos) > 0 else {}
             else:
                 action, _ = model.predict(obs, deterministic=True)
                 obs, reward, done, truncated, info = env.step(action)
+                current_info = info if info else {}
 
             # Read current world state from unwrapped env
             # When using VecNormalize, the actual environment is inside vec_env
@@ -197,9 +213,12 @@ async def stream_loop(args: argparse.Namespace) -> None:
             # Get reward (from step return or info)
             current_reward = float(reward) if not vec_env else float(rewards[0])
             
-            # Check if drone is in target zone
-            in_target = False
-            if hasattr(e, 'target_x_min') and hasattr(e, 'target_x_max'):
+            # Get target_spawned from info dict (it's not stored as env attribute)
+            target_spawned = current_info.get('target_spawned', False)
+            
+            # Check if drone is in target zone (use info dict value if available, otherwise calculate)
+            in_target = current_info.get('in_target', False)
+            if not in_target and hasattr(e, 'target_x_min') and hasattr(e, 'target_x_max'):
                 in_target = (e.target_x_min <= e.x <= e.target_x_max and 
                             e.target_y_min <= e.y <= e.target_y_max)
             
@@ -221,7 +240,7 @@ async def stream_loop(args: argparse.Namespace) -> None:
                 "target_x_max": float(getattr(e, 'target_x_max', 0.0)),
                 "target_y_min": float(getattr(e, 'target_y_min', 0.0)),
                 "target_y_max": float(getattr(e, 'target_y_max', 0.0)),
-                "target_spawned": bool(getattr(e, 'target_spawned', False)),
+                "target_spawned": bool(target_spawned),
                 "obs": obs.tolist() if isinstance(obs, np.ndarray) else list(obs),
                 "timestamp": time.time(),
                 "liquid": bool(args.liquid),
@@ -249,7 +268,7 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--difficulty", type=int, default=2, help="Env difficulty level (0-5)")
     ap.add_argument("--fps", type=int, default=30, help="Streaming FPS")
     ap.add_argument("--liquid", type=lambda v: str(v).lower() in ("1","true","yes","y","t"), default=False, help="Set True if model is Liquid policy")
-    ap.add_argument("--episodes", type=int, default=5, help="Number of episodes to play")
+    ap.add_argument("--episodes", type=int, default=0, help="Number of episodes to play (0 = infinite/continuous)")
     return ap.parse_args()
 
 

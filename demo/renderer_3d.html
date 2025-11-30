@@ -29,6 +29,9 @@
       <div class="row">Wind: <span id="wind">(0.00, 0.00)</span></div>
       <div class="row">FPS: <span id="fps">0</span></div>
       <div id="status">Connecting to ws://localhost:8765 …</div>
+      <div id="legend" style="margin-top: 8px; font-size: 11px; opacity: 0.7;">
+        <div>Controls: <strong>R</strong> - Reset camera | <strong>Mouse</strong> - Orbit/Pan/Zoom</div>
+      </div>
     </div>
 
     <script type="importmap">
@@ -63,7 +66,10 @@
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.dampingFactor = 0.05;
-      controls.enablePan = false;
+      controls.enablePan = true; // Enable panning for free camera movement
+      controls.enableZoom = true; // Enable zoom
+      controls.minDistance = 5; // Minimum zoom distance
+      controls.maxDistance = 50; // Maximum zoom distance
 
       // Lights
       const ambient = new THREE.AmbientLight(0xffffff, 0.45);
@@ -93,6 +99,8 @@
       // Create procedural quadcopter drone model (no file loading needed)
       const droneGroup = new THREE.Group();
       droneGroup.position.set(1.2, 6, 5.1); // Initial position
+      // Render drone before target zone so target zone can cover it when inside
+      droneGroup.renderOrder = 1;
       scene.add(droneGroup);
 
       // Central body (cube)
@@ -182,6 +190,8 @@
         side: THREE.DoubleSide,
         emissive: 0x440044, // Increased magenta glow for visibility
         emissiveIntensity: 0.5,
+        depthTest: true, // Enable depth testing
+        depthWrite: false, // Don't write depth for proper transparency blending
         // Avoid z-fighting and ensure it renders above the ground
         polygonOffset: true,
         polygonOffsetFactor: -1,
@@ -189,8 +199,8 @@
       });
       const targetZone = new THREE.Mesh(targetZoneGeo, targetZoneMat);
       targetZone.visible = false; // Will be shown when target spawns
-      // Draw after ground and grid to ensure visibility
-      targetZone.renderOrder = 2;
+      // Draw after drone to cover it when inside (higher renderOrder = renders later)
+      targetZone.renderOrder = 10;
       scene.add(targetZone);
 
       // Target zone border (wireframe) - brighter magenta for visibility
@@ -408,9 +418,6 @@
       );
       scene.add(floorLine);
 
-      // Camera follow parameters
-      const followOffset = new THREE.Vector3(8, 3, 12); // Better viewing angle (lowered height)
-      const smooth = 0.1;
 
       // Stats overlay
       const elPolicy = document.getElementById("policy");
@@ -509,16 +516,36 @@
             const newY = 1 + (normalizedZ - 0.5) * 5; // Map 0.5-1.5 to 1-6 (same as wind arrows)
             droneGroup.position.set(clampedX, newY, clampedY);
             
-            // Visual indicator: change drone color to red when at or very close to boundary
+            // Visual indicator: green glow when in target zone, red glow when not
             const boundaryMargin = 0.02 * worldScale; // 2% of boundary size
             const nearBoundaryX = (clampedX < boundaryMargin || clampedX > worldScale - boundaryMargin);
             const nearBoundaryY = (clampedY < boundaryMargin || clampedY > worldScale - boundaryMargin);
             const atBoundary = nearBoundaryX || nearBoundaryY;
             
-            // Update drone color (works with both loaded models and fallback box)
+            // Update drone color and glow based on target zone status
+            // Fallback: if target bounds are valid, assume target has spawned
+            const targetHasSpawned = target_spawned || (target_x_max > target_x_min && target_y_max > target_y_min);
+            
             if (drone) {
-              const targetColor = atBoundary ? 0xff0000 : droneColor;
-              const targetEmissive = atBoundary ? 0x330000 : 0x002244;
+              let targetColor, targetEmissive, emissiveIntensity;
+              
+              if (in_target && targetHasSpawned) {
+                // Green glow when inside target zone
+                targetColor = 0x00ff00; // Green
+                targetEmissive = 0x00aa00; // Bright green glow
+                emissiveIntensity = 0.8; // Strong glow
+              } else {
+                // Red glow when not in target zone (or at boundary)
+                targetColor = atBoundary ? 0xff0000 : 0xff3333; // Red (brighter red at boundary)
+                targetEmissive = atBoundary ? 0x660000 : 0x440000; // Red glow
+                emissiveIntensity = atBoundary ? 0.6 : 0.4; // Stronger glow at boundary
+              }
+              
+              // Debug logging (every 60 steps)
+              if (step % 60 === 0) {
+                console.log(`[Drone Color] in_target=${in_target}, target_spawned=${target_spawned}, targetHasSpawned=${targetHasSpawned}, color=${targetColor.toString(16)}`);
+              }
+              
               drone.traverse((child) => {
                 if (child.isMesh && child.material) {
                   // Handle both single material and array of materials
@@ -527,6 +554,7 @@
                     if (mat.isMeshPhongMaterial || mat.isMeshStandardMaterial) {
                       mat.color.setHex(targetColor);
                       mat.emissive.setHex(targetEmissive);
+                      mat.emissiveIntensity = emissiveIntensity;
                     }
                   });
                 }
@@ -573,9 +601,9 @@
               
               // Adjust opacity and glow based on whether target has spawned and if drone is in it
               if (in_target && target_spawned) {
-                // Drone is in target zone - make it very visible with pulsing glow
-                targetZoneMat.opacity = 0.7; // Very visible
-                targetZoneMat.emissiveIntensity = 1.0; // Strong glow
+                // Drone is in target zone - make it highly visible to cover/obscure the drone
+                targetZoneMat.opacity = 0.9; // High opacity to cover drone when inside
+                targetZoneMat.emissiveIntensity = 1.2; // Strong glow
                 targetZoneMat.emissive.setHex(0x8800ff); // Brighter magenta glow
               } else if (target_spawned) {
                 // Target spawned but drone not in it
@@ -860,14 +888,23 @@
         updateFPS();
         updateWindArrows(deltaTime);
         
-        // Camera follow with smoothing
-        const desired = droneGroup.position.clone().add(followOffset);
-        camera.position.lerp(desired, smooth);
-        camera.lookAt(droneGroup.position);
+        // Camera is always free to move - no follow mode
         controls.update();
         renderer.render(scene, camera);
       }
       animate();
+
+      // Keyboard controls for camera
+      window.addEventListener("keydown", (event) => {
+        // Press 'R' to reset camera to a good viewing position
+        if (event.key === 'r' || event.key === 'R') {
+          const resetPos = new THREE.Vector3(10, 10, 18);
+          camera.position.copy(resetPos);
+          camera.lookAt(droneGroup.position);
+          controls.target.copy(droneGroup.position);
+          console.log("[Camera] Reset to default viewing position");
+        }
+      });
 
       // Resize
       window.addEventListener("resize", () => {
