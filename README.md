@@ -12,14 +12,6 @@ A reinforcement learning project demonstrating the superior performance of Liqui
 
 Our comprehensive evaluation across 5 wind difficulty levels shows **Liquid Neural Networks consistently outperform MLP baselines**:
 
-| Wind Difficulty | MLP Survival (steps) | Liquid Survival (steps) | MLP Reward | Liquid Reward | Improvement |
-|----------------|---------------------|-------------------------|------------|---------------|-------------|
-| **0 - No Wind** | 500.00 | 500.00 | 1,952.05 | **3,680.07** | **+88.5%** |
-| **1 - Mild** | 500.00 | 500.00 | 1,978.83 | **3,911.90** | **+97.7%** |
-| **2 - Medium** | 500.00 | 500.00 | 1,799.26 | **3,804.05** | **+111.4%** |
-| **3 - Chaotic** | 379.70 | **426.65** | 1,441.47 | **3,084.81** | **+12.4% survival, +114.1% reward** |
-| **4 - Extreme** | 144.45 | **163.70** | 409.49 | **850.76** | **+13.3% survival, +107.7% reward** |
-
 ### **Key Findings:**
 - ✅ **Liquid NN achieves 2x higher rewards** in easy-to-medium conditions
 - ✅ **Liquid NN survives 13% longer** in extreme wind conditions
