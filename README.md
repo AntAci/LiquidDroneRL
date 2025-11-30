@@ -1,4 +1,4 @@
-# 🚁 PROJECT: AERO-LIQUID
+
 ### *Liquid Neural Networks for Robust Drone Control in LLM-Generated Turbulence*
 
 ## 👥 THE SQUAD & ROLES
