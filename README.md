@@ -1,4 +1,4 @@
-# 🚁 Drone-go-brrrrr: Liquid Neural Networks for Robust Drone Control
+# 🚁 LiquidDroneRL: Liquid Neural Networks for Robust Drone Control
 
 ### *Liquid Neural Networks Outperform Traditional MLPs in Windy Drone Navigation*
 
@@ -67,7 +67,7 @@ Our comprehensive evaluation across 5 wind difficulty levels shows **Liquid Neur
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd Drone-go-brrrrr
+cd LiquidDroneRL
 
 # Create virtual environment
 python3 -m venv venv
@@ -208,7 +208,7 @@ python create_presentation_graph.py --episodes 30
 ## 📁 Project Structure
 
 ```
-Drone-go-brrrrr/
+LiquidDroneRL/
 ├── env/                    # Environment implementation
 │   └── drone_env.py        # DroneWindEnv with wind dynamics
 ├── models/                 # Neural network models
@@ -304,11 +304,11 @@ Both models were trained using:
 If you use this project in your research, please cite:
 
 ```bibtex
-@software{drone_go_brrrrr,
-  title = {Drone-go-brrrrr: Liquid Neural Networks for Robust Drone Control},
-  author = {Drone-go-brrrrr Contributors},
+@software{liquiddronerl,
+  title = {LiquidDroneRL: Liquid Neural Networks for Robust Drone Control},
+  author = {LiquidDroneRL Contributors},
   year = {2024},
-  url = {https://github.com/yourusername/Drone-go-brrrrr},
+  url = {https://github.com/yourusername/LiquidDroneRL},
   license = {MIT}
 }
 ```
