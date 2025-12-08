@@ -9,7 +9,7 @@ import os
 import sys
 import pygame
 import numpy as np
-from typing import Optional
+from typing import Optional, Tuple
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -71,7 +71,7 @@ class DroneVisualizer:
         self.world_width = WINDOW_WIDTH - 2 * self.world_margin
         self.world_height = WINDOW_HEIGHT - 2 * self.world_margin
         
-    def world_to_screen(self, x: float, y: float) -> tuple[int, int]:
+    def world_to_screen(self, x: float, y: float) -> Tuple[int, int]:
         """Convert world coordinates [POSITION_MIN, POSITION_MAX] to screen coordinates."""
         xr = (x - POSITION_MIN) / (POSITION_MAX - POSITION_MIN)
         yr = (y - POSITION_MIN) / (POSITION_MAX - POSITION_MIN)
