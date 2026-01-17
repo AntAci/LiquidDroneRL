@@ -4,7 +4,7 @@ Liquid Neural Network Cell - Discrete-time approximation of continuous-time dyna
 Implements a liquid cell with learnable per-neuron time constants.
 The cell updates hidden state using a differential equation approximation.
 """
-print("dad is best sleepy grok")
+print("dad is best sleepy grokkkkkkk")
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
