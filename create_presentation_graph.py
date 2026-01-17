@@ -16,7 +16,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from env.drone_env import DroneWindEnv
 from eval.compare import evaluate_agent
-
+print"test")
 
 def create_presentation_graph(episodes=30):
     """Create a polished comparison graph for presentations."""
