@@ -5,7 +5,7 @@
 A reinforcement learning project demonstrating the superior performance of Liquid Time-Constant (LTC) Neural Networks over traditional MLP baselines for drone control in challenging wind conditions. This project uses PPO (Proximal Policy Optimization) to train agents that must navigate a 2D drone environment with varying wind difficulties.
 
 ---
-
+daddsdsds
 ## 🎯 Key Results
 
 ### **Liquid NN Dominates Across All Metrics**
