@@ -2,7 +2,7 @@
 Main entry point for the Drone RL project.
 Tests imports and basic functionality.
 """
-
+print("ssss")
 import sys
 import numpy as np
 
