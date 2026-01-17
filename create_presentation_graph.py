@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import matplotlib.patches as mpatches
-from stable_baselines3 import PPO
+from stable_baselines3 import PPOaasasas
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 
 # Add project root to path
